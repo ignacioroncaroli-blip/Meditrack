@@ -495,20 +495,30 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
     auth: {
       signInWithPassword: async ({ email, password }) => {
         try {
-          const r = await xhrPost("/api/login", { "Content-Type": "application/json" }, JSON.stringify({ email, password }));
-          if (!r.ok) return { data: null, error: { message: r.json.error || "Credenciales incorrectas" } };
-          supabase._token = r.json.access_token;
-          supabase._uid = r.json.user ? r.json.user.id : null;
-          return { data: { user: r.json.user, session: r.json }, error: null };
+          const resp = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON },
+            body: JSON.stringify({ email, password })
+          });
+          const rj = await resp.json();
+          if (!resp.ok) return { data: null, error: { message: rj.error_description || rj.error || "Credenciales incorrectas" } };
+          supabase._token = rj.access_token;
+          supabase._uid = rj.user ? rj.user.id : null;
+          return { data: { user: rj.user, session: rj }, error: null };
         } catch(e) { return { data: null, error: { message: "Sin conexión: " + e.message } }; }
       },
       signUp: async ({ email, password, options }) => {
         try {
-          const r = await xhrPost("/api/signup", { "Content-Type": "application/json" }, JSON.stringify({ email, password, data: (options && options.data) || {} }));
-          if (!r.ok) return { data: null, error: { message: r.json.error || "Error al registrarse" } };
-          supabase._token = r.json.access_token;
-          supabase._uid = r.json.user ? r.json.user.id : null;
-          return { data: { user: r.json.user }, error: null };
+          const resp = await fetch(SUPABASE_URL + "/auth/v1/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON },
+            body: JSON.stringify({ email, password, data: (options && options.data) || {} })
+          });
+          const rj = await resp.json();
+          if (!resp.ok) return { data: null, error: { message: rj.error_description || rj.msg || rj.error || "Error al registrarse" } };
+          supabase._token = rj.access_token;
+          supabase._uid = rj.user ? rj.user.id : null;
+          return { data: { user: rj.user }, error: null };
         } catch(e) { return { data: null, error: { message: "Sin conexión: " + e.message } }; }
       },
       signOut: async () => { supabase._token = null; supabase._uid = null; }
