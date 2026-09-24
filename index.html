@@ -458,6 +458,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   const SUPABASE_URL  = "https://lvipgqaqmeaevahkxuay.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2aXBxZ2FxbWVhZXZhaGt4dWF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzE1NzUsImV4cCI6MjEwNTgwNzU3NX0.ELU0GkPT8oXrqqLZffwuVwcGzfbdfmY5WfGy389hkxU";
@@ -489,63 +490,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
     });
   }
 
-  const supabase = {
-    _token: null,
-    _uid: null,
-    auth: {
-      signInWithPassword: async ({ email, password }) => {
-        try {
-          const resp = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON },
-            body: JSON.stringify({ email, password })
-          });
-          const rj = await resp.json();
-          if (!resp.ok) return { data: null, error: { message: rj.error_description || rj.error || "Credenciales incorrectas" } };
-          supabase._token = rj.access_token;
-          supabase._uid = rj.user ? rj.user.id : null;
-          return { data: { user: rj.user, session: rj }, error: null };
-        } catch(e) { return { data: null, error: { message: "Sin conexión: " + e.message } }; }
-      },
-      signUp: async ({ email, password, options }) => {
-        try {
-          const resp = await fetch(SUPABASE_URL + "/auth/v1/signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON },
-            body: JSON.stringify({ email, password, data: (options && options.data) || {} })
-          });
-          const rj = await resp.json();
-          if (!resp.ok) return { data: null, error: { message: rj.error_description || rj.msg || rj.error || "Error al registrarse" } };
-          supabase._token = rj.access_token;
-          supabase._uid = rj.user ? rj.user.id : null;
-          return { data: { user: rj.user }, error: null };
-        } catch(e) { return { data: null, error: { message: "Sin conexión: " + e.message } }; }
-      },
-      signOut: async () => { supabase._token = null; supabase._uid = null; }
-    },
-    from: function(table) {
-      return {
-        select: function(cols) {
-          cols = cols || "*";
-          return {
-            eq: function(col, val) {
-              return {
-                single: async function() {
-                  try {
-                    const r = await xhrGet(
-                      SUPABASE_URL + "/rest/v1/" + table + "?select=" + cols + "&" + col + "=eq." + val + "&limit=1",
-                      { "apikey": SUPABASE_ANON, "Authorization": "Bearer " + supabase._token }
-                    );
-                    return { data: Array.isArray(r.json) ? (r.json[0] || null) : null, error: r.ok ? null : r.json };
-                  } catch(e) { return { data: null, error: { message: e.message } }; }
-                }
-              };
-            }
-          };
-        }
-      };
-    }
-  };
+  const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON);
 </script>
 <script type="text/babel">
 const { useState, useCallback, useRef, useEffect } = React;
