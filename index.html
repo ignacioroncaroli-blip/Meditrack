@@ -490,7 +490,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
     });
   }
 
-  const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 </script>
 <script type="text/babel">
 const { useState, useCallback, useRef, useEffect } = React;
