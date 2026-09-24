@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MediTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: #1A1A2E; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+  --bg:        #F4F5F7;
+  --surface:   #FFFFFF;
+  --sidebar-w: 220px;
+  --topbar-h:  56px;
+  --border:    #E5E7EB;
+  --border2:   #F0F1F3;
+  --text:      #1F2937;
+  --text2:     #6B7280;
+  --text3:     #9CA3AF;
+  --accent:    #3B6FD4;
+  --accent-bg: #EEF2FF;
+  --green:     #16A34A;
+  --green-bg:  #DCFCE7;
+  --red:       #DC2626;
+  --red-bg:    #FEE2E2;
+  --amber:     #D97706;
+  --amber-bg:  #FEF3C7;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --r:         8px;
+  --r-lg:      12px;
+}
+
+/* ── LAYOUT ───────────────────────────────────────────────── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── SIDEBAR ──────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sb-logo {
+  height: var(--topbar-h);
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sb-logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--accent);
+  display: grid; place-items: center;
+}
+.sb-logo-text { font-size: 15px; font-weight: 700; color: var(--text); }
+.sb-logo-badge {
+  font-size: 10px; background: var(--accent-bg); color: var(--accent);
+  padding: 2px 7px; border-radius: 20px; font-weight: 600; margin-left: auto;
+}
+.sb-scroll { flex: 1; overflow-y: auto; padding: 8px; }
+.sb-scroll::-webkit-scrollbar { display: none; }
+.sb-section {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  padding: 12px 8px 4px; text-transform: uppercase; letter-spacing: .5px;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: var(--r);
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: all .15s;
+  border: none; background: none; width: 100%; text-align: left;
+  position: relative;
+}
+.sb-item:hover { background: var(--bg); color: var(--text); }
+.sb-item.active { background: var(--accent-bg); color: var(--accent); }
+.sb-item.active svg { stroke: var(--accent); }
+.sb-badge {
+  margin-left: auto; background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700; min-width: 18px; height: 18px;
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  padding: 0 5px;
+}
+.sb-footer {
+  border-top: 1px solid var(--border);
+  padding: 12px; flex-shrink: 0;
+}
+.sb-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: var(--r); cursor: pointer;
+  transition: background .15s;
+}
+.sb-user:hover { background: var(--bg); }
+.sb-av {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+}
+.sb-uname { font-size: 13px; font-weight: 600; color: var(--text); }
+.sb-urole { font-size: 11px; color: var(--text3); }
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* ── TOPBAR ───────────────────────────────────────────────── */
+.topbar {
+  height: var(--topbar-h); background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px; gap: 12px;
+  flex-shrink: 0;
+}
+.topbar-title { font-size: 17px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+.topbar-search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 20px; padding: 7px 14px; flex: 1; max-width: 340px; margin-left: 16px;
+  transition: all .2s;
+}
+.topbar-search:focus-within { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(59,111,212,.1); }
+.topbar-search input { background: none; border: none; outline: none; font-size: 13px; font-family: inherit; flex: 1; color: var(--text); }
+.topbar-search input::placeholder { color: var(--text3); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: var(--r);
+  border: 1px solid var(--border); background: var(--surface);
+  display: grid; place-items: center; cursor: pointer; color: var(--text2);
+  transition: all .15s;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── CONTENT ──────────────────────────────────────────────── */
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+.content::-webkit-scrollbar { width: 6px; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--r);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: 1px solid transparent; transition: all .15s;
+  font-family: inherit; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #2D5DC0; }
+.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-ghost { background: none; color: var(--text2); border-color: transparent; }
+.btn-ghost:hover { background: var(--bg); color: var(--text); }
+.btn-danger { background: var(--red-bg); color: var(--red); border-color: transparent; }
+.btn-danger:hover { background: var(--red); color: #fff; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-icon { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border-radius: var(--r); }
+
+/* ── CARDS ────────────────────────────────────────────────── */
+.card {
+  background: var(--surface); border-radius: var(--r-lg);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.card-sub { font-size: 12px; color: var(--text3); }
+
+/* ── STATS ────────────────────────────────────────────────── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface); border-radius: var(--r-lg);
+  border: 1px solid var(--border); padding: 20px;
+  box-shadow: var(--shadow-sm); transition: box-shadow .2s;
+}
+.stat-card:hover { box-shadow: var(--shadow-md); }
+.stat-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: grid; place-items: center; margin-bottom: 14px;
+}
+.stat-val { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+.stat-delta { font-size: 12px; color: var(--text3); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.delta-up { color: var(--green); }
+
+/* ── TABLE ────────────────────────────────────────────────── */
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  font-size: 12px; font-weight: 600; color: var(--text3);
+  padding: 10px 20px; border-bottom: 1px solid var(--border2);
+  text-align: left; background: #FAFAFA; white-space: nowrap;
+}
+.table td {
+  padding: 13px 20px; font-size: 13px;
+  border-bottom: 1px solid var(--border2); color: var(--text);
+  vertical-align: middle;
+}
+.table tbody tr { cursor: pointer; transition: background .1s; }
+.table tbody tr:hover td { background: #FAFBFF; }
+.table tbody tr:last-child td { border-bottom: none; }
+
+/* ── PAC CELL ─────────────────────────────────────────────── */
+.pac-cell { display: flex; align-items: center; gap: 10px; }
+.pac-av {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+
+/* ── BADGES ───────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red   { background: var(--red-bg);   color: var(--red);   }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-blue  { background: var(--accent-bg);color: var(--accent);}
+.badge-gray  { background: #F3F4F6;         color: var(--text2); }
+
+/* ── SEARCHBAR ────────────────────────────────────────────── */
+.filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; border-bottom: 1px solid var(--border2); flex-wrap: wrap;
+}
+.search-input {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border); border-radius: var(--r);
+  padding: 7px 12px; background: var(--surface); flex: 1; max-width: 280px;
+  transition: all .2s;
+}
+.search-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,111,212,.1); }
+.search-input input { background: none; border: none; outline: none; font-size: 13px; font-family: inherit; flex: 1; color: var(--text); }
+
+/* ── FILTER CHIPS ─────────────────────────────────────────── */
+.filter-chip {
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text2); cursor: pointer; transition: all .15s;
+}
+.filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+.filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── MODAL ────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4); z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn .15s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md); width: 100%; max-width: 540px;
+  max-height: 90vh; overflow-y: auto;
+  animation: slideUp .2s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.modal-header {
+  padding: 20px 24px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border2);
+}
+.modal-title { font-size: 17px; font-weight: 600; }
+.modal-body { padding: 20px 24px; }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border2);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+/* ── FORM ─────────────────────────────────────────────────── */
+.form-label {
+  display: block; font-size: 12px; font-weight: 500;
+  color: var(--text2); margin-bottom: 5px;
+}
+.form-input {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: var(--r);
+  font-size: 13px; font-family: inherit; color: var(--text);
+  background: var(--surface); outline: none; transition: all .2s;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,111,212,.1); }
+.form-group { margin-bottom: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ── DETAIL PANEL ─────────────────────────────────────────── */
+.detail-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+.detail-panel { background: var(--surface); border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 20px; }
+.detail-av { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+.detail-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.detail-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.detail-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.info-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border2); }
+.info-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.info-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; font-size: 13px; gap: 8px; }
+.info-key { color: var(--text2); flex-shrink: 0; }
+.info-val { font-weight: 500; text-align: right; color: var(--text); }
+
+/* ── TABS ─────────────────────────────────────────────────── */
+.tab-bar { display: flex; border-bottom: 1px solid var(--border2); margin-bottom: 20px; }
+.tab-btn {
+  padding: 10px 16px; border: none; background: none;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: all .15s; font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-count {
+  background: var(--bg); color: var(--text3);
+  font-size: 11px; font-weight: 600;
+  padding: 1px 6px; border-radius: 10px;
+}
+.tab-btn.active .tab-count { background: var(--accent-bg); color: var(--accent); }
+
+/* ── CALENDAR ─────────────────────────────────────────────── */
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-dh { font-size: 11px; font-weight: 600; color: var(--text3); text-align: center; padding: 6px 0; }
+.cal-day {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r); font-size: 13px; cursor: pointer; position: relative;
+  transition: all .12s; color: var(--text); font-weight: 400;
+}
+.cal-day:hover:not(.cal-off) { background: var(--bg); }
+.cal-day.cal-off { color: var(--border); pointer-events: none; }
+.cal-day.cal-has::after { content: ''; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+.cal-day.cal-today { background: var(--accent); color: #fff; font-weight: 600; }
+.cal-day.cal-today::after { background: rgba(255,255,255,.6); }
+.cal-day.cal-sel { background: var(--accent-bg); color: var(--accent); font-weight: 600; border: 1.5px solid var(--accent); }
+
+/* ── SETTINGS ─────────────────────────────────────────────── */
+.settings-layout { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; }
+.settings-nav { background: var(--surface); border-radius: var(--r-lg); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); }
+.settings-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; font-size: 13px; font-weight: 500;
+  color: var(--text2); cursor: pointer; transition: all .15s;
+  border: none; background: none; width: 100%; text-align: left;
+  border-bottom: 1px solid var(--border2);
+}
+.settings-nav-item:last-child { border-bottom: none; }
+.settings-nav-item:hover { background: var(--bg); color: var(--text); }
+.settings-nav-item.active { background: var(--accent-bg); color: var(--accent); }
+.settings-section { background: var(--surface); border-radius: var(--r-lg); border: 1px solid var(--border); margin-bottom: 16px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.settings-section-header { padding: 16px 20px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; justify-content: space-between; }
+.settings-section-title { font-size: 14px; font-weight: 600; }
+.settings-section-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.settings-body { padding: 20px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border2); }
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label { font-size: 13px; font-weight: 500; }
+.settings-row-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ── TOGGLE ───────────────────────────────────────────────── */
+.toggle { width: 42px; height: 24px; border-radius: 12px; cursor: pointer; position: relative; transition: background .2s; border: none; flex-shrink: 0; }
+.toggle.on { background: var(--accent); }
+.toggle.off { background: #D1D5DB; }
+.toggle-knob { width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 3px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.toggle.on .toggle-knob { transform: translateX(21px); }
+.toggle.off .toggle-knob { transform: translateX(3px); }
+
+/* ── PLAN CARDS ───────────────────────────────────────────── */
+.plan-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.plan-card { border-radius: var(--r-lg); border: 2px solid var(--border); padding: 20px; transition: all .2s; cursor: pointer; position: relative; }
+.plan-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
+.plan-card.plan-active { border-color: var(--accent); background: var(--accent-bg); }
+.plan-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 12px; border-radius: 20px; white-space: nowrap; }
+.plan-name { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 4px; }
+.plan-price { font-size: 22px; font-weight: 700; margin-bottom: 14px; }
+.plan-feature { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
+.plan-feature::before { content: '✓'; color: var(--accent); font-weight: 700; }
+
+/* ── HORARIO ──────────────────────────────────────────────── */
+.horario-row { display: grid; grid-template-columns: 120px 1fr 1fr 80px; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border2); }
+.horario-row:last-child { border-bottom: none; }
+
+/* ── CONSULTA FULLPAGE ────────────────────────────────────── */
+.cp-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 90; display: flex; flex-direction: column; overflow: hidden; animation: fadeIn .15s; }
+.cp-topbar { height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+.cp-body { flex: 1; overflow-y: auto; padding: 24px; }
+.cp-body::-webkit-scrollbar { width: 6px; }
+.cp-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.cp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cp-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cp-grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cp-full { margin-bottom: 16px; }
+.cp-sec { background: var(--surface); border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+.cp-sec-header { padding: 13px 18px; border-bottom: 1px solid var(--border2); font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.cp-sec-body { padding: 16px 18px; }
+.cp-pac-banner { background: linear-gradient(135deg, #1D3557 0%, #3B6FD4 100%); padding: 16px 20px; border-radius: var(--r-lg); display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+
+/* ── ANALYTICS ────────────────────────────────────────────── */
+.metric-bar { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+.mbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mbar-fill { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; opacity: .7; transition: height .4s; }
+.mbar-fill.hi { opacity: 1; background: var(--accent); }
+.mbar-lbl { font-size: 10px; color: var(--text3); font-weight: 500; }
+.mbar-val { font-size: 10px; font-weight: 700; color: var(--text2); }
+
+/* ── SEMAFORO ─────────────────────────────────────────────── */
+.semaforo { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+.sema-item { padding: 18px; text-align: center; background: var(--surface); }
+.sema-val { font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.sema-lbl { font-size: 11px; font-weight: 600; }
+
+/* ── TOAST ────────────────────────────────────────────────── */
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: #1F2937; color: #fff; padding: 12px 16px; border-radius: var(--r-lg); display: flex; align-items: center; gap: 10px; font-size: 13px; box-shadow: var(--shadow-md); animation: slideUp .2s ease; min-width: 240px; }
+.toast-close { margin-left: auto; background: none; border: none; color: rgba(255,255,255,.5); cursor: pointer; font-size: 16px; }
+
+/* ── DROP ZONE ────────────────────────────────────────────── */
+.drop-zone { border: 2px dashed var(--border); border-radius: var(--r-lg); padding: 28px; text-align: center; cursor: pointer; transition: all .2s; background: var(--bg); }
+.drop-zone:hover { border-color: var(--accent); background: var(--accent-bg); }
+
+/* ── AUTH ─────────────────────────────────────────────────── */
+.auth-page { min-height: 100vh; background: linear-gradient(135deg, #1D3557 0%, #3B6FD4 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.auth-card { background: var(--surface); border-radius: 16px; padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+
+/* ── MISC ─────────────────────────────────────────────────── */
+.empty { padding: 48px 20px; text-align: center; color: var(--text3); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+.empty-sub { font-size: 13px; color: var(--text3); }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-size: 20px; font-weight: 700; }
+.page-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.imc-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--r); font-size: 13px; font-weight: 600; margin-top: 6px; }
+.rec-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r); background: var(--bg); cursor: pointer; font-family: inherit; font-size: 13px; transition: all .15s; }
+.rec-toggle:hover { border-color: var(--accent); }
+.rec-panel { border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--r) var(--r); padding: 12px; background: var(--surface); }
+.pw-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.pw-fill { height: 100%; border-radius: 2px; transition: all .3s; }
+.hci { padding: 14px; border: 1px solid var(--border2); border-radius: var(--r-lg); margin-bottom: 10px; transition: border-color .15s; }
+.hci:hover { border-color: var(--accent); }
+.session-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border2); }
+.session-row:last-child { border-bottom: none; }
+.session-icon { width: 38px; height: 38px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+.vpill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script>
+  const SUPABASE_URL  = "https://lvipgqaqmeaevahkxuay.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2aXBxZ2FxbWVhZXZhaGt4dWF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzE1NzUsImV4cCI6MjEwNTgwNzU3NX0.ELU0GkPT8oXrqqLZffwuVwcGzfbdfmY5WfGy389hkxU";
+
+  function xhrPost(url, headers, body) {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      for (var k in headers) xhr.setRequestHeader(k, headers[k]);
+      xhr.onload = function() {
+        try { resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: JSON.parse(xhr.responseText) }); }
+        catch(e) { reject(e); }
+      };
+      xhr.onerror = function() { reject(new Error("Network error")); };
+      xhr.send(body);
+    });
+  }
+  function xhrGet(url, headers) {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", url, true);
+      for (var k in headers) xhr.setRequestHeader(k, headers[k]);
+      xhr.onload = function() {
+        try { resolve({ ok: xhr.status >= 200 && xhr.status < 300, json: JSON.parse(xhr.responseText) }); }
+        catch(e) { reject(e); }
+      };
+      xhr.onerror = function() { reject(new Error("Network error")); };
+      xhr.send();
+    });
+  }
+
+  const supabase = {
+    _token: null,
+    _uid: null,
+    auth: {
+      signInWithPassword: async ({ email, password }) => {
+        try {
+          const r = await xhrPost("/api/login", { "Content-Type": "application/json" }, JSON.stringify({ email, password }));
+          if (!r.ok) return { data: null, error: { message: r.json.error || "Credenciales incorrectas" } };
+          supabase._token = r.json.access_token;
+          supabase._uid = r.json.user ? r.json.user.id : null;
+          return { data: { user: r.json.user, session: r.json }, error: null };
+        } catch(e) { return { data: null, error: { message: "Sin conexión: " + e.message } }; }
+      },
+      signUp: async ({ email, password, options }) => {
+        try {
+          const r = await xhrPost("/api/signup", { "Content-Type": "application/json" }, JSON.stringify({ email, password, data: (options && options.data) || {} }));
+          if (!r.ok) return { data: null, error: { message: r.json.error || "Error al registrarse" } };
+          supabase._token = r.json.access_token;
+          supabase._uid = r.json.user ? r.json.user.id : null;
+          return { data: { user: r.json.user }, error: null };
+        } catch(e) { return { data: null, error: { message: "Sin conexión: " + e.message } }; }
+      },
+      signOut: async () => { supabase._token = null; supabase._uid = null; }
+    },
+    from: function(table) {
+      return {
+        select: function(cols) {
+          cols = cols || "*";
+          return {
+            eq: function(col, val) {
+              return {
+                single: async function() {
+                  try {
+                    const r = await xhrGet(
+                      SUPABASE_URL + "/rest/v1/" + table + "?select=" + cols + "&" + col + "=eq." + val + "&limit=1",
+                      { "apikey": SUPABASE_ANON, "Authorization": "Bearer " + supabase._token }
+                    );
+                    return { data: Array.isArray(r.json) ? (r.json[0] || null) : null, error: r.ok ? null : r.json };
+                  } catch(e) { return { data: null, error: { message: e.message } }; }
+                }
+              };
+            }
+          };
+        }
+      };
+    }
+  };
+</script>
+<script type="text/babel">
+const { useState, useCallback, useRef, useEffect } = React;
+
+// ─── DATA ───────────────────────────────────────────────────
+const COLORS = ["#3B6FD4","#DC2626","#16A34A","#D97706","#7C3AED","#0891B2"];
+const MESES_L = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const DIAS    = ["Do","Lu","Ma","Mi","Ju","Vi","Sa"];
+const HOY     = new Date().toISOString().split("T")[0];
+
+const getAv    = (n="",a="") => ((n[0]||"")+(a[0]||"")).toUpperCase();
+const getColor = id => COLORS[(id?.charCodeAt(0)??0) % COLORS.length];
+const calcEdad = d => d ? Math.floor((Date.now()-new Date(d))/31557600000) : null;
+const fmtD     = d => { if(!d) return "—"; const [y,m,dia]=d.split("-"); return `${dia}/${m}/${y}`; };
+const fmtSize  = b => b<1024?`${b}B`:b<1048576?`${(b/1024).toFixed(1)}KB`:`${(b/1048576).toFixed(1)}MB`;
+const dTipo    = n => { const e=(n||"").split(".").pop()?.toLowerCase(); if(["jpg","jpeg","png","webp"].includes(e))return"img"; if(e==="pdf")return"pdf"; if(["xls","xlsx","csv"].includes(e))return"lab"; return"doc"; };
+
+const DB = {
+  medico: null,
+  pacientes: [
+    { id:"p1", nombre:"Ana", apellido:"Garcia", dob:"1984-03-12", dni:"28.341.122", tel:"+54 11 4523-9021", email:"ana@email.com", tipo:"recurrente", dx:"Hipertension arterial", meds:"Enalapril 10mg", notas:"Controlar dieta sin sal.",
+      turnos:[{id:"tp1",fecha:"2026-04-25",hora:"10:00",motivo:"Control mensual",estado:"programado"}],
+      hc:[{id:"c1",fecha:"2026-04-10",motivo:"Control mensual",sis:138,dia:88,peso:67,fc:72,notas:"Leve mejora."},{id:"c2",fecha:"2026-03-05",motivo:"Control rutinario",sis:142,dia:90,peso:68,notas:"Iniciar cambios."}],
+      adj:[{id:"a1",nombre:"hemograma-abril.pdf",tipo:"pdf",size:245000,fecha:"2026-04-10",desc:"Hemograma"},{id:"a2",nombre:"eco-abdominal.jpg",tipo:"img",size:1800000,fecha:"2026-03-20",desc:"Ecografia"}] },
+    { id:"p2", nombre:"Carlos", apellido:"Mendoza", dob:"1968-07-25", dni:"15.209.887", tel:"+54 11 5634-1122", email:"carlos@gmail.com", tipo:"recurrente", dx:"Diabetes tipo 2", meds:"Metformina 850mg", notas:"Glucemia en descenso.",
+      turnos:[{id:"tp2",fecha:"2026-04-22",hora:"11:30",motivo:"Control glucemia",estado:"programado"}],
+      hc:[{id:"c3",fecha:"2026-04-08",motivo:"Control glucemia",sis:125,dia:80,peso:89,notas:"Glucemia 145."}],
+      adj:[{id:"a3",nombre:"laboratorio.xlsx",tipo:"lab",size:38000,fecha:"2026-02-14",desc:"Glucemia"}] },
+    { id:"p3", nombre:"Lucia", apellido:"Fernandez", dob:"1995-11-08", dni:"37.890.445", tel:"+54 11 2211-8844", email:"lucia@outlook.com", tipo:"nuevo", dx:"Ansiedad leve", meds:null, notas:"Derivada de neurologia.",
+      turnos:[{id:"tp3",fecha:"2026-05-15",hora:"14:00",motivo:"Seguimiento",estado:"programado"}],
+      hc:[{id:"c4",fecha:"2026-04-15",motivo:"Primera consulta",sis:118,dia:75,peso:59,notas:"Anamnesis completa."}],
+      adj:[] },
+    { id:"p4", nombre:"Roberto", apellido:"Silva", dob:"1959-02-14", dni:"10.123.456", tel:"+54 11 3344-5566", email:"rsilva@yahoo.com", tipo:"recurrente", dx:"Insuf. cardiaca leve", meds:"Furosemida 40mg", notas:"Control estricto.",
+      turnos:[{id:"tp4",fecha:"2026-04-28",hora:"09:00",motivo:"Control cardiologico",estado:"programado"}],
+      hc:[{id:"c5",fecha:"2026-03-20",motivo:"Control cardiologico",sis:140,dia:85,peso:78,notas:"Edemas reducidos."}],
+      adj:[] },
+    { id:"p5", nombre:"Marta", apellido:"Suarez", dob:"1972-06-15", dni:"22.456.789", tel:"+54 11 6677-8899", email:"marta@gmail.com", tipo:"nuevo", dx:"Hipotiroidismo", meds:"Levotiroxina 50mcg", notas:"Control hormonal.",
+      turnos:[{id:"tp5",fecha:"2026-05-07",hora:"16:00",motivo:"Resultado analisis",estado:"programado"}],
+      hc:[{id:"c6",fecha:"2026-04-16",motivo:"Primera consulta",sis:122,dia:78,peso:72,notas:"TSH solicitada."}],
+      adj:[] },
+  ],
+  recs: { tp1:[{id:"r1",canal:"whatsapp",estado:"enviado",at:"2026-04-18T18:01:00"},{id:"r2",canal:"email",estado:"enviado",at:"2026-04-18T18:01:02"}], tp2:[], tp3:[], tp4:[], tp5:[] },
+};
+
+// ─── ICONS ──────────────────────────────────────────────────
+function Ico({ n, s=18, c="currentColor" }) {
+  const p = {
+    home:     <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+    users:    <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></>,
+    cal:      <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+    chart:    <><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>,
+    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></>,
+    plus:     <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    search:   <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>,
+    x:        <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    check:    <polyline points="20 6 9 17 4 12"/>,
+    back:     <polyline points="15 18 9 12 15 6"/>,
+    fwd:      <polyline points="9 18 15 12 9 6"/>,
+    down:     <polyline points="6 9 12 15 18 9"/>,
+    up:       <polyline points="18 15 12 9 6 15"/>,
+    eye:      <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+    eyeoff:   <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>,
+    logout:   <><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+    bell:     <><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></>,
+    shield:   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
+    clock:    <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+    trash:    <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></>,
+    clip:     <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></>,
+    wa:       <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>,
+    trend:    <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>,
+    edit:     <><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+    phone:    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.51-1.51a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>,
+    lock:     <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></>,
+    card:     <><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></>,
+    hospital: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></>,
+    mail:     <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>,
+  };
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {p[n] || null}
+    </svg>
+  );
+}
+
+// ─── TOAST ──────────────────────────────────────────────────
+let _tid = 0;
+function Toasts({ list, remove }) {
+  return (
+    <div className="toast-wrap">
+      {list.map(t => (
+        <div key={t.id} className="toast">
+          <Ico n="check" s={14} c="#4ADE80"/>
+          {t.msg}
+          <button className="toast-close" onClick={() => remove(t.id)}>×</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── TOGGLE ─────────────────────────────────────────────────
+function Toggle({ on, onChange }) {
+  return (
+    <button className={`toggle ${on ? "on" : "off"}`} onClick={() => onChange(!on)}>
+      <div className="toggle-knob"/>
+    </button>
+  );
+}
+
+// ─── AUTH ────────────────────────────────────────────────────
+function Auth({ onLogin }) {
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [nom, setNom] = useState(""); const [ap, setAp] = useState("");
+  const [esp, setEsp] = useState(""); const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
+
+  const submit = async () => {
+    if (!email || !pw) { setErr("Completa email y contraseña."); return; }
+    setBusy(true); setErr("");
+    try {
+      if (mode === "login") {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+        if (error) { setErr(error.message === "Invalid login credentials" ? "Email o contraseña incorrectos." : error.message); setBusy(false); return; }
+        // Traer perfil del médico
+        const { data: perfil } = await supabase.from("medicos").select("*").eq("id", data.user.id).single();
+        DB.medico = perfil || { nombre: "Dr.", apellido: "", email, especialidad: "", plan: "basic" };
+      } else {
+        if (!nom) { setErr("Ingresá tu nombre."); setBusy(false); return; }
+        const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: { nombre: nom, apellido: ap, especialidad: esp } } });
+        if (error) { setErr(error.message); setBusy(false); return; }
+        DB.medico = { nombre: nom, apellido: ap, email, especialidad: esp, plan: "basic" };
+      }
+      setBusy(false); onLogin();
+    } catch(e) { setErr("Error: " + (e?.message || JSON.stringify(e))); setBusy(false); }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
+          <div className="sb-logo-icon"><Ico n="shield" s={18} c="#fff"/></div>
+          <div>
+            <div style={{ fontSize:20, fontWeight:700 }}>MediTrack</div>
+            <div style={{ fontSize:12, color:"#6B7280", marginTop:1 }}>Sistema de gestión médica</div>
+          </div>
+        </div>
+
+        <div style={{ fontSize:22, fontWeight:700, marginBottom:6 }}>{mode === "login" ? "Bienvenido" : "Crear cuenta"}</div>
+        <div style={{ fontSize:13, color:"#6B7280", marginBottom:24 }}>{mode === "login" ? "Ingresá para acceder a tu consultorio." : "14 días gratis, sin tarjeta."}</div>
+
+        {err && <div style={{ background:"#FEE2E2", border:"1px solid #FECACA", borderRadius:8, padding:"10px 14px", fontSize:13, color:"#DC2626", marginBottom:16 }}>{err}</div>}
+
+        {mode === "register" && (
+          <div className="form-row">
+            <div className="form-group"><label className="form-label">Nombre</label><input className="form-input" placeholder="Alejandro" value={nom} onChange={e => setNom(e.target.value)}/></div>
+            <div className="form-group"><label className="form-label">Apellido</label><input className="form-input" placeholder="Ramirez" value={ap} onChange={e => setAp(e.target.value)}/></div>
+          </div>
+        )}
+        {mode === "register" && <div className="form-group"><label className="form-label">Especialidad</label><input className="form-input" placeholder="Clinica Medica" value={esp} onChange={e => setEsp(e.target.value)}/></div>}
+
+        <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" placeholder="dr@consultorio.com" value={email} onChange={e => setEmail(e.target.value)}/></div>
+        <div className="form-group">
+          <label className="form-label">Contraseña</label>
+          <div style={{ position:"relative" }}>
+            <input className="form-input" type={showPw ? "text" : "password"} placeholder="••••••••" style={{ paddingRight:40 }} value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()}/>
+            <button onClick={() => setShowPw(x => !x)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#9CA3AF" }}>
+              <Ico n={showPw ? "eyeoff" : "eye"} s={16}/>
+            </button>
+          </div>
+        </div>
+
+        <button className="btn btn-primary" disabled={busy} onClick={submit} style={{ width:"100%", justifyContent:"center", padding:"11px", fontSize:14 }}>
+          {busy && <div className="spinner"/>}
+          {mode === "login" ? "Ingresar" : "Crear cuenta gratis"}
+        </button>
+
+        <div style={{ textAlign:"center", marginTop:18, fontSize:13, color:"#6B7280" }}>
+          {mode === "login"
+            ? <>¿No tenés cuenta? <button onClick={() => { setMode("register"); setErr(""); }} style={{ background:"none", border:"none", color:"var(--accent)", fontWeight:600, cursor:"pointer", fontSize:13 }}>Registrate gratis</button></>
+            : <>¿Ya tenés cuenta? <button onClick={() => { setMode("login"); setErr(""); }} style={{ background:"none", border:"none", color:"var(--accent)", fontWeight:600, cursor:"pointer", fontSize:13 }}>Ingresar</button></>}
+        </div>
+
+        <div style={{ marginTop:24, background:"#EEF2FF", borderRadius:8, padding:"12px 14px" }}>
+          <div style={{ fontSize:12, fontWeight:600, color:"var(--accent)", marginBottom:3 }}>Acceso seguro</div>
+          <div style={{ fontSize:12, color:"#6B7280", lineHeight:1.5 }}>Tus datos están protegidos con cifrado de nivel bancario. Cada médico solo accede a su propia información.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────────
+function Dashboard({ pacs, addToast }) {
+  const allT = pacs.flatMap(p => (p.turnos || []).map(t => ({ ...t, pac: p })));
+  const prox = allT.filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora)).slice(0,6);
+  const hoyT = allT.filter(t => t.fecha === HOY).length;
+  const nuev = pacs.filter(p => p.tipo === "nuevo").length;
+  const recur= pacs.filter(p => p.tipo === "recurrente").length;
+  const totalC = pacs.reduce((s,p) => s + (p.hc?.length || 0), 0);
+
+  return (
+    <div>
+      <div className="stats-grid">
+        {[
+          { icon:"users", iconBg:"#EEF2FF", iconC:"var(--accent)", lbl:"Total Pacientes", val:pacs.length, delta:`${recur} recurrentes` },
+          { icon:"cal",   iconBg:"#FEF3C7", iconC:"var(--amber)",  lbl:"Turnos Hoy",     val:hoyT,        delta:"programados" },
+          { icon:"trend", iconBg:"#DCFCE7", iconC:"var(--green)",  lbl:"Pacientes Nuevos",val:nuev,        delta:"este mes" },
+          { icon:"clip",  iconBg:"#F3F4F6", iconC:"#6B7280",       lbl:"Consultas Totales",val:totalC,     delta:"en historia clínica" },
+        ].map((s,i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-icon" style={{ background: s.iconBg }}><Ico n={s.icon} s={20} c={s.iconC}/></div>
+            <div className="stat-val">{s.val}</div>
+            <div className="stat-label">{s.lbl}</div>
+            <div className="stat-delta">{s.delta}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid-3-1">
+        <div className="card">
+          <div className="card-header">
+            <div><div className="card-title">Próximos turnos</div><div className="card-sub">{prox.length} agendados</div></div>
+          </div>
+          {prox.length === 0 && (
+            <div className="empty"><div className="empty-icon">📅</div><div className="empty-text">Sin turnos próximos</div></div>
+          )}
+          <table className="table">
+            <thead><tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Estado</th></tr></thead>
+            <tbody>
+              {prox.map(t => (
+                <tr key={t.id}>
+                  <td><div className="pac-cell"><div className="pac-av" style={{ background: t.pac.color }}>{t.pac.av}</div><div><div style={{ fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{t.pac.dx}</div></div></div></td>
+                  <td><span style={{ color: t.fecha === HOY ? "var(--accent)" : "inherit", fontWeight: t.fecha === HOY ? 600 : 400 }}>{t.fecha === HOY ? "Hoy" : fmtD(t.fecha)}</span></td>
+                  <td style={{ fontWeight:600 }}>{t.hora}</td>
+                  <td style={{ color:"#6B7280" }}>{t.motivo}</td>
+                  <td><span className="badge badge-green">{t.estado}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-header"><div className="card-title">Mis pacientes</div></div>
+            <div style={{ padding:"20px" }}>
+              <svg viewBox="0 0 100 100" style={{ width:80, height:80, display:"block", margin:"0 auto 14px" }}>
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#F3F4F6" strokeWidth="12"/>
+                <circle cx="50" cy="50" r="38" fill="none" stroke="var(--accent)" strokeWidth="12"
+                  strokeDasharray={`${recur / Math.max(pacs.length, 1) * 239} 239`}
+                  strokeDashoffset="60" transform="rotate(-90 50 50)"/>
+              </svg>
+              {[{ lbl:"Recurrentes", val:recur, c:"var(--accent)" },{ lbl:"Nuevos", val:nuev, c:"var(--red)" }].map(r => (
+                <div key={r.lbl} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, fontSize:13 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:r.c }}/>
+                    <span style={{ color:"#6B7280" }}>{r.lbl}</span>
+                  </div>
+                  <span style={{ fontWeight:600 }}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><div className="card-title">Resumen</div></div>
+            <div style={{ padding:"14px 20px" }}>
+              {[
+                { lbl:"Con turno próximo", val: pacs.filter(p => (p.turnos||[]).some(t => t.fecha >= HOY)).length },
+                { lbl:"Sin turno agendado", val: pacs.filter(p => !(p.turnos||[]).some(t => t.fecha >= HOY)).length },
+                { lbl:"Total consultas HC", val: totalC },
+              ].map(r => (
+                <div key={r.lbl} style={{ display:"flex", justifyContent:"space-between", marginBottom:10, fontSize:13 }}>
+                  <span style={{ color:"#6B7280" }}>{r.lbl}</span>
+                  <span style={{ fontWeight:600 }}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header"><div className="card-title">Pacientes recientes</div><div className="card-sub">{pacs.length} total</div></div>
+        <table className="table">
+          <thead><tr><th>Paciente</th><th>Diagnóstico</th><th>Última visita</th><th>Próximo turno</th><th>Tipo</th></tr></thead>
+          <tbody>
+            {pacs.slice(0,5).map(p => {
+              const prT = (p.turnos||[]).filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha))[0];
+              return (
+                <tr key={p.id}>
+                  <td><div className="pac-cell"><div className="pac-av" style={{ background: p.color }}>{p.av}</div><div><div style={{ fontWeight:500 }}>{p.nombre} {p.apellido}</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{p.dni}</div></div></div></td>
+                  <td style={{ color:"#374151" }}>{p.dx || "—"}</td>
+                  <td style={{ color:"#6B7280" }}>{p.hc?.[0]?.fecha ? fmtD(p.hc[0].fecha) : "—"}</td>
+                  <td style={{ color: prT ? "var(--accent)" : "#9CA3AF", fontWeight: prT ? 600 : 400 }}>{prT ? fmtD(prT.fecha) : "—"}</td>
+                  <td><span className={`badge ${p.tipo === "nuevo" ? "badge-red" : "badge-green"}`}>{p.tipo}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── PATIENTS ────────────────────────────────────────────────
+function Patients({ pacs, onSelect, onNew }) {
+  const [q, setQ] = useState(""); const [f, setF] = useState("todos");
+  const fil = pacs.filter(p => {
+    const txt = `${p.nombre} ${p.apellido} ${p.dx||""} ${p.dni||""}`.toLowerCase();
+    return txt.includes(q.toLowerCase()) && (f === "todos" || p.tipo === f);
+  });
+  return (
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">Pacientes</div><div className="page-sub">{pacs.length} pacientes en seguimiento</div></div>
+        <button className="btn btn-primary" onClick={onNew}><Ico n="plus" s={15}/>Nuevo Paciente</button>
+      </div>
+      <div className="card">
+        <div className="filter-bar">
+          <div className="search-input">
+            <Ico n="search" s={15} c="#9CA3AF"/>
+            <input placeholder="Buscar por nombre, DNI o diagnóstico..." value={q} onChange={e => setQ(e.target.value)}/>
+            {q && <button onClick={() => setQ("")} style={{ background:"none", border:"none", cursor:"pointer", color:"#9CA3AF" }}><Ico n="x" s={14}/></button>}
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            {["todos","recurrente","nuevo"].map(x => (
+              <button key={x} className={`filter-chip ${f === x ? "active" : ""}`} onClick={() => setF(x)}>
+                {x.charAt(0).toUpperCase() + x.slice(1)} {x !== "todos" ? `(${pacs.filter(p => p.tipo === x).length})` : `(${pacs.length})`}
+              </button>
+            ))}
+          </div>
+          <div style={{ marginLeft:"auto", fontSize:12, color:"#9CA3AF" }}>{fil.length} resultados</div>
+        </div>
+        <table className="table">
+          <thead><tr><th>Paciente</th><th>Edad</th><th>Diagnóstico</th><th>Medicación</th><th>Última visita</th><th>Próximo turno</th><th>Tipo</th><th>Adj.</th></tr></thead>
+          <tbody>
+            {fil.length === 0 && <tr><td colSpan={8} className="empty"><div className="empty-icon">🔍</div><div className="empty-text">Sin resultados</div></td></tr>}
+            {fil.map(p => {
+              const prT = (p.turnos||[]).filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha))[0];
+              return (
+                <tr key={p.id} onClick={() => onSelect(p.id)}>
+                  <td><div className="pac-cell"><div className="pac-av" style={{ background: p.color }}>{p.av}</div><div><div style={{ fontWeight:500 }}>{p.nombre} {p.apellido}</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{p.email}</div></div></div></td>
+                  <td style={{ color:"#374151" }}>{p.edad || "—"}</td>
+                  <td style={{ color:"#374151", maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.dx || "—"}</td>
+                  <td style={{ color:"#6B7280", fontSize:12 }}>{p.meds || "—"}</td>
+                  <td style={{ color:"#6B7280" }}>{p.hc?.[0]?.fecha ? fmtD(p.hc[0].fecha) : "—"}</td>
+                  <td style={{ color: prT ? "var(--accent)" : "#9CA3AF", fontWeight: prT ? 600 : 400 }}>{prT ? fmtD(prT.fecha) : "—"}</td>
+                  <td><span className={`badge ${p.tipo === "nuevo" ? "badge-red" : "badge-green"}`}>{p.tipo}</span></td>
+                  <td><span style={{ color: (p.adj?.length || 0) > 0 ? "var(--accent)" : "#9CA3AF", fontWeight:600 }}>{p.adj?.length || 0}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── PATIENT DETAIL ──────────────────────────────────────────
+function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
+  const [tab, setTab] = useState("hc");
+  const [showConsulta, setShowConsulta] = useState(false);
+  const [recOpen, setRecOpen] = useState(false);
+  const [recs, setRecs] = useState([...(DB.recs[pac.turnos?.[0]?.id] || [])]);
+  const [uploading, setUploading] = useState(false);
+  const [adjDesc, setAdjDesc] = useState("");
+  const adjRef = useRef();
+  const turnoProx = (pac.turnos||[]).filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha))[0] || null;
+
+  const enviarRec = async () => {
+    setUploading(true); await new Promise(r => setTimeout(r, 900));
+    const nw = [{ id:"r"+Date.now(), canal:"whatsapp", estado:"enviado", at:new Date().toISOString() },
+                { id:"r"+(Date.now()+1), canal:"email", estado:"enviado", at:new Date().toISOString() }];
+    const upd = [...nw, ...recs];
+    if (turnoProx) DB.recs[turnoProx.id] = upd;
+    setRecs(upd); setUploading(false);
+    addToast("Recordatorio enviado a " + pac.nombre + " " + pac.apellido);
+  };
+
+  const handleFiles = async files => {
+    const file = files[0]; if (!file) return;
+    if (file.size > 10*1024*1024) { addToast("Archivo supera 10MB"); return; }
+    setUploading(true); await new Promise(r => setTimeout(r, 800));
+    pac.adj.unshift({ id:"a"+Date.now(), nombre:file.name, tipo:dTipo(file.name), size:file.size, fecha:HOY, desc:adjDesc });
+    syncPacs(); setUploading(false); setAdjDesc("");
+    addToast("Archivo subido correctamente");
+  };
+
+  const saveConsulta = f => {
+    const sis = parseInt(f.presion_sis)||null, dia = parseInt(f.presion_dia)||null;
+    const c = { id:"c"+Date.now(), fecha:f.fecha||HOY, motivo:f.motivo, sis, dia, fc:parseFloat(f.fc)||null, temp:parseFloat(f.temp)||null, spo2:parseFloat(f.spo2)||null, peso:parseFloat(f.peso)||null, talla:parseFloat(f.talla)||null, dx_consulta:f.dx_consulta||null, indicaciones:f.indicaciones||null, estudios:f.estudios||null, meds_consulta:f.meds_consulta||null, receta:f.receta||false, proxima_fecha:f.proxima_fecha||null, notas:f.notas||null };
+    if (!pac.hc) pac.hc = [];
+    pac.hc.unshift(c); syncPacs();
+    addToast("Consulta registrada en historia clínica");
+    setShowConsulta(false);
+  };
+
+  const tEmoji = t => ({ pdf:"📄", img:"🖼️", lab:"🧪", doc:"📎" })[t] || "📎";
+
+  return (
+    <div>
+      <button className="btn btn-ghost" onClick={onBack} style={{ marginBottom:20 }}><Ico n="back" s={15}/>Volver a Pacientes</button>
+      <div className="detail-layout">
+        <div>
+          <div className="detail-panel" style={{ marginBottom:16 }}>
+            <div className="detail-av" style={{ background: pac.color }}>{pac.av}</div>
+            <div className="detail-name">{pac.nombre} {pac.apellido}</div>
+            <div className="detail-sub">{pac.edad ? `${pac.edad} años · ` : ""}{pac.dni}<br/>{pac.tel && <><Ico n="phone" s={12} c="#9CA3AF"/> {pac.tel}</>}</div>
+            <span className={`badge ${pac.tipo === "nuevo" ? "badge-red" : "badge-green"}`} style={{ marginTop:10, display:"inline-flex" }}>{pac.tipo === "nuevo" ? "Paciente Nuevo" : "Paciente Recurrente"}</span>
+            <div className="detail-actions">
+              <button className="btn btn-primary" onClick={() => setShowConsulta(true)} style={{ flex:1, justifyContent:"center" }}><Ico n="plus" s={14}/>Consulta</button>
+              <button className="btn btn-secondary" onClick={onNewTurno} style={{ flex:1, justifyContent:"center" }}><Ico n="cal" s={14}/>Turno</button>
+            </div>
+          </div>
+
+          <div className="detail-panel" style={{ marginBottom:16 }}>
+            <div className="info-label">Datos clínicos</div>
+            {[["Diagnóstico", pac.dx||"—"],["Medicación", pac.meds||"—"],["Notas", pac.notas||"—"]].map(([k,v]) => (
+              <div key={k} className="info-row">
+                <span className="info-key">{k}</span>
+                <span className="info-val" style={k==="Notas" ? { color:"#6B7280", fontStyle:"italic" } : {}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="detail-panel">
+            <div className="info-label">Próximo turno</div>
+            {turnoProx ? (
+              <>
+                <div className="info-row"><span className="info-key">Fecha</span><span className="info-val" style={{ color:"var(--accent)" }}>{fmtD(turnoProx.fecha)}</span></div>
+                <div className="info-row"><span className="info-key">Hora</span><span className="info-val">{turnoProx.hora}</span></div>
+                <div className="info-row"><span className="info-key">Motivo</span><span className="info-val">{turnoProx.motivo}</span></div>
+                <div style={{ marginTop:14 }}>
+                  <button className="rec-toggle" onClick={() => setRecOpen(o => !o)}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:16 }}>💬</span>
+                      <div><div style={{ fontSize:13, fontWeight:500 }}>Recordatorios</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{recs.length > 0 ? `${recs.length} enviados` : "Sin enviar"}</div></div>
+                    </div>
+                    <Ico n={recOpen ? "up" : "down"} s={14} c="#9CA3AF"/>
+                  </button>
+                  {recOpen && (
+                    <div className="rec-panel">
+                      {recs.length === 0 && <div style={{ fontSize:12, color:"#9CA3AF", padding:"8px 0" }}>Sin recordatorios enviados</div>}
+                      {recs.map(r => (
+                        <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 0", borderBottom:"1px solid #F3F4F6", fontSize:12 }}>
+                          <span>{r.canal === "whatsapp" ? "💬" : "📧"}</span>
+                          <span style={{ fontWeight:500, minWidth:70 }}>{r.canal}</span>
+                          <span style={{ color:"var(--green)", fontWeight:600 }}>Enviado</span>
+                          <span style={{ marginLeft:"auto", color:"#9CA3AF", fontSize:11 }}>{new Date(r.at).toLocaleString("es-AR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+                        </div>
+                      ))}
+                      <button className="btn btn-primary" style={{ width:"100%", justifyContent:"center", marginTop:10, padding:"9px", fontSize:12 }} disabled={uploading} onClick={enviarRec}>
+                        {uploading ? <div className="spinner"/> : <Ico n="wa" s={14}/>}Enviar recordatorio
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : <div style={{ fontSize:13, color:"#9CA3AF" }}>Sin turno agendado</div>}
+          </div>
+        </div>
+
+        <div className="card">
+          <div style={{ padding:"16px 20px 0" }}>
+            <div className="tab-bar">
+              {[["hc","Historia Clínica",pac.hc?.length||0],["adj","Adjuntos",pac.adj?.length||0]].map(([id,lbl,cnt]) => (
+                <button key={id} className={`tab-btn ${tab===id?"active":""}`} onClick={() => setTab(id)}>
+                  {lbl}<span className="tab-count">{cnt}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {tab === "hc" && (
+            <div style={{ padding:"0 20px 20px" }}>
+              <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+                <button className="btn btn-primary" onClick={() => setShowConsulta(true)}><Ico n="plus" s={14}/>Nueva Consulta</button>
+              </div>
+              {(!pac.hc || pac.hc.length === 0) && (
+                <div className="empty"><div className="empty-icon">🩺</div><div className="empty-text">Sin consultas registradas</div><div className="empty-sub">Agrega la primera consulta</div></div>
+              )}
+              {(pac.hc||[]).map(c => (
+                <div key={c.id} className="hci">
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <div style={{ fontSize:14, fontWeight:600 }}>{c.motivo}</div>
+                    <div style={{ fontSize:12, color:"#9CA3AF" }}>{fmtD(c.fecha)}</div>
+                  </div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom: c.notas ? 8 : 0 }}>
+                    {c.sis && c.dia && <span className="vpill" style={{ background:"#FEE2E2", color:"#DC2626" }}>PA {c.sis}/{c.dia}</span>}
+                    {c.fc   && <span className="vpill" style={{ background:"#FEF3C7", color:"#D97706" }}>FC {c.fc}</span>}
+                    {c.temp && <span className="vpill" style={{ background:"#F3F4F6", color:"#6B7280" }}>T° {c.temp}°C</span>}
+                    {c.spo2 && <span className="vpill" style={{ background:"#DBEAFE", color:"#1D4ED8" }}>O₂ {c.spo2}%</span>}
+                    {c.peso && <span className="vpill" style={{ background:"#DCFCE7", color:"#16A34A" }}>⚖ {c.peso}kg</span>}
+                    {c.receta && <span className="vpill" style={{ background:"#EEF2FF", color:"var(--accent)" }}>Receta</span>}
+                  </div>
+                  {c.dx_consulta && <div style={{ fontSize:12, color:"#374151", marginBottom:3 }}><strong>Dx:</strong> {c.dx_consulta}</div>}
+                  {c.notas && <div style={{ fontSize:12, color:"#6B7280", fontStyle:"italic" }}>"{c.notas}"</div>}
+                  {c.proxima_fecha && <div style={{ marginTop:8, background:"#FEF3C7", borderRadius:6, padding:"5px 10px", fontSize:12, color:"var(--amber)", fontWeight:500 }}>Próxima cita: {fmtD(c.proxima_fecha)}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "adj" && (
+            <div style={{ padding:"0 20px 20px" }}>
+              <div className="drop-zone" style={{ margin:"0 0 12px" }}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+                onClick={() => adjRef.current?.click()}>
+                <input ref={adjRef} type="file" style={{ display:"none" }} accept=".pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx,.csv" onChange={e => handleFiles(e.target.files)}/>
+                {uploading
+                  ? <div style={{ color:"#6B7280" }}>Subiendo...</div>
+                  : <><div style={{ fontSize:28, marginBottom:8 }}>☁️</div><div style={{ fontWeight:600, color:"#374151", marginBottom:4 }}>Arrastrá o hacé clic para subir</div><div style={{ fontSize:12, color:"#9CA3AF" }}>PDF · Imágenes · Excel · Máx. 10MB</div></>}
+              </div>
+              <input className="form-input" style={{ marginBottom:12 }} placeholder="Descripción del archivo (opcional)" value={adjDesc} onChange={e => setAdjDesc(e.target.value)}/>
+              {(!pac.adj || pac.adj.length === 0) && <div className="empty"><div className="empty-icon">📎</div><div className="empty-text">Sin adjuntos</div></div>}
+              {(pac.adj||[]).map((a,i) => (
+                <div key={a.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 0", borderBottom: i < pac.adj.length-1 ? "1px solid #F3F4F6" : "none" }}>
+                  <div style={{ width:42, height:42, borderRadius:8, background:"#F3F4F6", display:"grid", placeItems:"center", fontSize:20, flexShrink:0 }}>{a.tipo === "pdf" ? "📄" : a.tipo === "img" ? "🖼️" : a.tipo === "lab" ? "🧪" : "📎"}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.nombre}</div>
+                    <div style={{ fontSize:11, color:"#9CA3AF", marginTop:2 }}>{a.desc && <span style={{ color:"#374151" }}>{a.desc} · </span>}{fmtSize(a.size)} · {fmtD(a.fecha)}</div>
+                  </div>
+                  <button className="btn btn-icon btn-ghost" onClick={() => addToast("Abriendo " + a.nombre + "...")}><Ico n="eye" s={14}/></button>
+                  <button className="btn btn-icon btn-danger" onClick={() => { pac.adj = pac.adj.filter(x => x.id !== a.id); syncPacs(); addToast("Eliminado"); }}><Ico n="trash" s={14}/></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showConsulta && <ConsultaPage pac={pac} onClose={() => setShowConsulta(false)} onSave={saveConsulta}/>}
+    </div>
+  );
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────
+function CalendarPage({ pacs, addToast, onNew }) {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [selD, setSelD] = useState(now.getDate());
+
+  const dIM = new Date(year, month+1, 0).getDate();
+  const fWD = new Date(year, month, 1).getDay();
+  const selStr = `${year}-${String(month+1).padStart(2,"0")}-${String(selD).padStart(2,"0")}`;
+  const allT = pacs.flatMap(p => (p.turnos||[]).map(t => ({ ...t, pac: p })));
+  const dayT = allT.filter(t => t.fecha === selStr).sort((a,b) => a.hora.localeCompare(b.hora));
+  const hasDays = new Set(allT.filter(t => { const d = new Date(t.fecha); return d.getFullYear()===year && d.getMonth()===month; }).map(t => new Date(t.fecha).getDate()));
+  const prMo = () => { if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1); setSelD(1); };
+  const nxMo = () => { if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1); setSelD(1); };
+
+  return (
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">Agenda</div><div className="page-sub">Gestión de turnos</div></div>
+        <button className="btn btn-primary" onClick={onNew}><Ico n="plus" s={15}/>Nuevo Turno</button>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:20, alignItems:"start" }}>
+        <div className="card" style={{ padding:24 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+            <div style={{ fontSize:18, fontWeight:700 }}>{MESES_L[month]} {year}</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button className="btn btn-secondary btn-icon" onClick={prMo}><Ico n="back" s={14}/></button>
+              <button className="btn btn-secondary btn-icon" onClick={nxMo}><Ico n="fwd" s={14}/></button>
+            </div>
+          </div>
+          <div className="cal-grid" style={{ marginBottom:6 }}>
+            {DIAS.map((d,i) => <div key={i} className="cal-dh">{d}</div>)}
+          </div>
+          <div className="cal-grid">
+            {Array.from({length:fWD}).map((_,i) => <div key={"e"+i} className="cal-day cal-off"/>)}
+            {Array.from({length:dIM}).map((_,i) => {
+              const day = i+1;
+              const isT = day===now.getDate() && month===now.getMonth() && year===now.getFullYear();
+              const isSel = day===selD && !isT;
+              const hasE = hasDays.has(day);
+              return <div key={day} className={`cal-day${isT?" cal-today":""}${isSel?" cal-sel":""}${hasE?" cal-has":""}`} onClick={() => setSelD(day)}>{day}</div>;
+            })}
+          </div>
+        </div>
+
+        <div className="card" style={{ padding:18 }}>
+          <div style={{ fontSize:15, fontWeight:600, marginBottom:14, paddingBottom:12, borderBottom:"1px solid #F0F1F3" }}>
+            {selD} de {MESES_L[month]}
+          </div>
+          {dayT.length === 0
+            ? <div className="empty" style={{ padding:"24px 0" }}><div className="empty-icon">📅</div><div className="empty-text">Sin turnos</div></div>
+            : dayT.map((t,i) => (
+                <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom: i < dayT.length-1 ? "1px solid #F0F1F3" : "none" }}>
+                  <div style={{ width:4, height:36, background:t.pac.color, borderRadius:2, flexShrink:0 }}/>
+                  <div style={{ fontSize:13, fontWeight:700, color:"var(--accent)", minWidth:40 }}>{t.hora}</div>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div>
+                    <div style={{ fontSize:11, color:"#9CA3AF" }}>{t.motivo}</div>
+                  </div>
+                </div>
+              ))
+          }
+          <button className="btn btn-primary" style={{ width:"100%", justifyContent:"center", marginTop:14 }} onClick={onNew}><Ico n="plus" s={14}/>Agendar turno</button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop:20 }}>
+        <div className="card-header"><div className="card-title">Todos los turnos próximos</div></div>
+        <table className="table">
+          <thead><tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Estado</th><th>Diagnóstico</th></tr></thead>
+          <tbody>
+            {allT.filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora)).map(t => (
+              <tr key={t.id}>
+                <td><div className="pac-cell"><div className="pac-av" style={{ background: t.pac.color }}>{t.pac.av}</div><div style={{ fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div></div></td>
+                <td style={{ color: t.fecha===HOY ? "var(--accent)" : "inherit", fontWeight: t.fecha===HOY ? 600 : 400 }}>{t.fecha===HOY ? "Hoy" : fmtD(t.fecha)}</td>
+                <td style={{ fontWeight:600 }}>{t.hora}</td>
+                <td style={{ color:"#6B7280" }}>{t.motivo}</td>
+                <td><span className="badge badge-green">{t.estado}</span></td>
+                <td style={{ color:"#9CA3AF", fontSize:12 }}>{t.pac.dx || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────────
+function Analytics({ pacs }) {
+  const now = new Date();
+  const allHC = pacs.flatMap(p => (p.hc||[]).map(c => ({ ...c, pac:p })));
+  const allT  = pacs.flatMap(p => (p.turnos||[]).map(t => ({ ...t, pac:p })));
+
+  const consXmes = Array.from({length:6}, (_,i) => {
+    const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1);
+    const cnt = allHC.filter(c => { const cd = new Date(c.fecha); return cd.getFullYear()===d.getFullYear()&&cd.getMonth()===d.getMonth(); }).length;
+    return { lbl: MESES_S[d.getMonth()], cnt: cnt || [2,3,5,4,6,8][i] };
+  });
+  const maxC = Math.max(...consXmes.map(d => d.cnt), 1);
+
+  const dxMap = {}; pacs.forEach(p => { if(p.dx) dxMap[p.dx] = (dxMap[p.dx]||0)+1; });
+  const dxTop = Object.entries(dxMap).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const demoTop = [["Hipertension arterial",4],["Diabetes tipo 2",3],["Ansiedad leve",2],["Hipotiroidismo",2],["Insuf. cardiaca",1]];
+
+  const diasSinV = p => { const u=(p.hc||[]).map(c=>c.fecha).sort().at(-1); if(!u)return 999; return Math.floor((Date.now()-new Date(u))/86400000); };
+  const sv30=pacs.filter(p=>diasSinV(p)>30).length||2, sv60=pacs.filter(p=>diasSinV(p)>60).length||1, sv90=pacs.filter(p=>diasSinV(p)>90).length||0;
+  const total = allT.length || 9;
+
+  return (
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">Métricas</div><div className="page-sub">Actividad clínica · Agenda · Seguimiento</div></div>
+      </div>
+
+      <div className="stats-grid">
+        {[
+          { icon:"clip",  iconBg:"#EEF2FF", iconC:"var(--accent)", lbl:"Consultas este mes", val:consXmes.at(-1)?.cnt||0, delta:"en historia clínica" },
+          { icon:"check", iconBg:"#DCFCE7", iconC:"var(--green)",  lbl:"Tasa de asistencia", val:"94%", delta:"turnos completados" },
+          { icon:"clock", iconBg:"#FEF3C7", iconC:"var(--amber)",  lbl:"Sin visita +60 días", val:sv60, delta:"requieren seguimiento" },
+          { icon:"cal",   iconBg:"#F3F4F6", iconC:"#6B7280",       lbl:"Día más ocupado", val:"Martes", delta:"mayor carga histórica" },
+        ].map((s,i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-icon" style={{ background: s.iconBg }}><Ico n={s.icon} s={20} c={s.iconC}/></div>
+            <div className="stat-val">{s.val}</div>
+            <div className="stat-label">{s.lbl}</div>
+            <div className="stat-delta">{s.delta}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-header"><div className="card-title">Consultas por mes</div><div className="card-sub">Últimos 6 meses</div></div>
+          <div style={{ padding:"20px 24px" }}>
+            <div className="metric-bar">
+              {consXmes.map((d,i) => (
+                <div key={d.lbl} className="mbar-col">
+                  <div className="mbar-val">{d.cnt}</div>
+                  <div className={`mbar-fill ${i===5?"hi":""}`} style={{ height:`${Math.round((d.cnt/maxC)*68)}px` }}/>
+                  <div className="mbar-lbl">{d.lbl}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><div className="card-title">Diagnósticos frecuentes</div></div>
+          <div style={{ padding:"20px 24px" }}>
+            {(dxTop.length ? dxTop : demoTop).map(([dx,n],i) => (
+              <div key={dx} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <div style={{ fontSize:12, color:"#9CA3AF", minWidth:14, fontWeight:600 }}>{i+1}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                    <span style={{ color:"#374151" }}>{dx}</span>
+                    <span style={{ fontWeight:600 }}>{n}</span>
+                  </div>
+                  <div style={{ height:4, background:"#F3F4F6", borderRadius:2, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${Math.round((n/4)*100)}%`, background: COLORS[i%COLORS.length], borderRadius:2 }}/>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-header"><div className="card-title">Seguimiento de pacientes</div>{sv60>0&&<span className="badge badge-amber">⚠ {sv60} sin visita</span>}</div>
+          <div style={{ padding:"20px 24px" }}>
+            <div className="semaforo" style={{ marginBottom:20 }}>
+              {[{lbl:"+30 días",val:sv30,c:"var(--amber)",bg:"#FEF3C7"},{lbl:"+60 días",val:sv60,c:"var(--red)",bg:"#FEE2E2"},{lbl:"+90 días",val:sv90,c:"#9CA3AF",bg:"#F9FAFB"}].map(s=>(
+                <div key={s.lbl} className="sema-item" style={{ background:s.bg }}>
+                  <div className="sema-val" style={{ color:s.c }}>{s.val}</div>
+                  <div className="sema-lbl" style={{ color:s.c }}>{s.lbl}</div>
+                </div>
+              ))}
+            </div>
+            {pacs.slice(0,3).map((p,i) => (
+              <div key={p.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom: i<2 ? "1px solid #F0F1F3" : "none" }}>
+                <div className="pac-av" style={{ background:p.color, width:32, height:32, fontSize:11 }}>{p.av}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:500 }}>{p.nombre} {p.apellido}</div>
+                  <div style={{ fontSize:11, color:"#9CA3AF" }}>{p.dx||"—"}</div>
+                </div>
+                <span style={{ fontSize:11, color:"var(--red)", fontWeight:600 }}>{diasSinV(p)>900?"nuevo":`${diasSinV(p)}d`}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><div className="card-title">Tasa de asistencia</div><div style={{ fontSize:22, fontWeight:700, color:"var(--green)" }}>94%</div></div>
+          <div style={{ padding:"20px 24px" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+              {[{lbl:"Asistieron",val:total-1,c:"var(--green)",bg:"#DCFCE7"},{lbl:"Cancelaron",val:1,c:"var(--amber)",bg:"#FEF3C7"},{lbl:"Ausentes",val:0,c:"var(--red)",bg:"#FEE2E2"},{lbl:"Total",val:total,c:"var(--accent)",bg:"#EEF2FF"}].map(s=>(
+                <div key={s.lbl} style={{ padding:"14px", borderRadius:8, background:s.bg }}>
+                  <div style={{ fontSize:24, fontWeight:700, color:s.c }}>{s.val}</div>
+                  <div style={{ fontSize:11, color:s.c, fontWeight:500, marginTop:2 }}>{s.lbl}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background:"#F3F4F6", height:6, borderRadius:3, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:"94%", background:"var(--green)", borderRadius:3 }}/>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, fontSize:11, color:"#9CA3AF" }}>
+              <span>0%</span><span style={{ color:"var(--green)", fontWeight:600 }}>Meta: 90%</span><span>100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────
+function Settings({ medico, addToast }) {
+  const [sec, setSec] = useState("perfil");
+  const [perfil, setPerfil] = useState({ nombre:medico?.nombre||"Alejandro", apellido:medico?.apellido||"Ramirez", especialidad:medico?.especialidad||"Clinica Medica", matricula:"MN 98.432", email:medico?.email||"dr@consultorio.com", tel:"+54 11 4500-1234", bio:"Médico clínico con 15 años de experiencia." });
+  const [consul, setConsul] = useState({ nombre:"Consultorio Dr. Ramirez", direccion:"Av. Santa Fe 1234, Piso 3", ciudad:"Buenos Aires", cp:"C1059", telefono:"+54 11 4800-5678", email:"turnos@drramirez.com.ar", web:"www.drramirez.com.ar" });
+  const [horarios, setHorarios] = useState([{dia:"Lunes",activo:true,desde:"09:00",hasta:"18:00"},{dia:"Martes",activo:true,desde:"09:00",hasta:"18:00"},{dia:"Miércoles",activo:true,desde:"09:00",hasta:"13:00"},{dia:"Jueves",activo:true,desde:"09:00",hasta:"18:00"},{dia:"Viernes",activo:true,desde:"09:00",hasta:"16:00"},{dia:"Sábado",activo:false,desde:"",hasta:""},{dia:"Domingo",activo:false,desde:"",hasta:""}]);
+  const [notif, setNotif] = useState({ wa_rec:true, wa_conf:true, wa_canc:true, email_rec:true, email_conf:false, push_nuevo:true, push_hoy:true, push_sin:false, hs:"24" });
+  const [seg, setSeg] = useState({ pw_actual:"", pw_nueva:"", pw_conf:"", doble:false, sesiones:[{id:"s1",dis:"Chrome · Windows",lugar:"Buenos Aires",activa:true,ul:"Ahora mismo",ico:"💻"},{id:"s2",dis:"Safari · iPhone",lugar:"Buenos Aires",activa:false,ul:"Hace 2 horas",ico:"📱"}] });
+
+  const setPe = (k,v) => setPerfil(p => ({...p,[k]:v}));
+  const setCo = (k,v) => setConsul(p => ({...p,[k]:v}));
+  const setNo = (k,v) => setNotif(p => ({...p,[k]:v}));
+  const setH  = (i,k,v) => setHorarios(h => h.map((r,idx) => idx===i ? {...r,[k]:v} : r));
+
+  const pwStr = pw => { if(!pw)return{w:0,c:"#E5E7EB",t:""}; let s=0; if(pw.length>=8)s++; if(pw.length>=12)s++; if(/[A-Z]/.test(pw))s++; if(/[0-9]/.test(pw))s++; if(/[^A-Za-z0-9]/.test(pw))s++;
+    if(s<=1)return{w:20,c:"#DC2626",t:"Muy débil"}; if(s===2)return{w:40,c:"#D97706",t:"Débil"}; if(s===3)return{w:60,c:"#D97706",t:"Regular"}; if(s===4)return{w:80,c:"var(--green)",t:"Fuerte"}; return{w:100,c:"var(--green)",t:"Muy fuerte"}; };
+  const str = pwStr(seg.pw_nueva);
+
+  const PLANS = [{id:"basic",lbl:"Basic",price:"$4.900/mes",feat:["100 pacientes","HC básica","Agenda"],active:false},{id:"premium",lbl:"Premium",price:"$9.900/mes",feat:["Ilimitados","Adjuntos HC","WhatsApp","3 usuarios"],active:true},{id:"enterprise",lbl:"Enterprise",price:"A consultar",feat:["Todo Premium","Ilimitado","API custom","SLA 24/7"],active:false}];
+  const FACTS = [{fecha:"01/04/2026",desc:"Plan Premium — Abril 2026",monto:"$9.900",ok:true},{fecha:"01/03/2026",desc:"Plan Premium — Marzo 2026",monto:"$9.900",ok:true},{fecha:"01/02/2026",desc:"Plan Premium — Febrero 2026",monto:"$9.900",ok:true}];
+
+  const NAV = [{id:"perfil",ico:"user",lbl:"Perfil"},{id:"consultorio",ico:"hospital",lbl:"Consultorio"},{id:"notif",ico:"bell",lbl:"Notificaciones"},{id:"plan",ico:"card",lbl:"Plan y facturación"},{id:"seguridad",ico:"lock",lbl:"Seguridad"}];
+
+  const Ico2 = ({ n }) => {
+    const pp = { user:<><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>, hospital:<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></>, bell:<><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></>, card:<><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></>, lock:<><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></> };
+    return <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{pp[n]||null}</svg>;
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">Ajustes</div><div className="page-sub">Cuenta, consultorio y seguridad</div></div>
+      </div>
+      <div className="settings-layout">
+        <nav className="settings-nav">
+          {NAV.map(n => (
+            <button key={n.id} className={`settings-nav-item ${sec===n.id?"active":""}`} onClick={() => setSec(n.id)}>
+              <Ico2 n={n.ico}/>{n.lbl}
+            </button>
+          ))}
+        </nav>
+
+        <div>
+          {sec === "perfil" && (
+            <div className="settings-section">
+              <div className="settings-section-header">
+                <div><div className="settings-section-title">Perfil del médico</div><div className="settings-section-sub">Tu información personal y profesional</div></div>
+                <button className="btn btn-primary btn-sm" onClick={() => addToast("Perfil actualizado")}><Ico n="check" s={13}/>Guardar</button>
+              </div>
+              <div className="settings-body">
+                <div className="form-row">
+                  <div className="form-group"><label className="form-label">Nombre</label><input className="form-input" value={perfil.nombre} onChange={e => setPe("nombre",e.target.value)}/></div>
+                  <div className="form-group"><label className="form-label">Apellido</label><input className="form-input" value={perfil.apellido} onChange={e => setPe("apellido",e.target.value)}/></div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group"><label className="form-label">Especialidad</label><input className="form-input" value={perfil.especialidad} onChange={e => setPe("especialidad",e.target.value)}/></div>
+                  <div className="form-group"><label className="form-label">Matrícula</label><input className="form-input" value={perfil.matricula} onChange={e => setPe("matricula",e.target.value)}/></div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={perfil.email} onChange={e => setPe("email",e.target.value)}/></div>
+                  <div className="form-group"><label className="form-label">Teléfono</label><input className="form-input" value={perfil.tel} onChange={e => setPe("tel",e.target.value)}/></div>
+                </div>
+                <div className="form-group"><label className="form-label">Bio profesional</label><textarea className="form-input" rows={3} style={{ resize:"none" }} value={perfil.bio} onChange={e => setPe("bio",e.target.value)}/></div>
+              </div>
+            </div>
+          )}
+
+          {sec === "consultorio" && (
+            <>
+              <div className="settings-section" style={{ marginBottom:16 }}>
+                <div className="settings-section-header">
+                  <div><div className="settings-section-title">Datos del consultorio</div><div className="settings-section-sub">Información visible para los pacientes</div></div>
+                  <button className="btn btn-primary btn-sm" onClick={() => addToast("Datos guardados")}><Ico n="check" s={13}/>Guardar</button>
+                </div>
+                <div className="settings-body">
+                  <div className="form-group"><label className="form-label">Nombre del consultorio</label><input className="form-input" value={consul.nombre} onChange={e => setCo("nombre",e.target.value)}/></div>
+                  <div className="form-group"><label className="form-label">Dirección</label><input className="form-input" value={consul.direccion} onChange={e => setCo("direccion",e.target.value)}/></div>
+                  <div className="form-row">
+                    <div className="form-group"><label className="form-label">Ciudad</label><input className="form-input" value={consul.ciudad} onChange={e => setCo("ciudad",e.target.value)}/></div>
+                    <div className="form-group"><label className="form-label">Código Postal</label><input className="form-input" value={consul.cp} onChange={e => setCo("cp",e.target.value)}/></div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group"><label className="form-label">Email de turnos</label><input className="form-input" value={consul.email} onChange={e => setCo("email",e.target.value)}/></div>
+                    <div className="form-group"><label className="form-label">Sitio web</label><input className="form-input" value={consul.web} onChange={e => setCo("web",e.target.value)}/></div>
+                  </div>
+                </div>
+              </div>
+              <div className="settings-section">
+                <div className="settings-section-header">
+                  <div><div className="settings-section-title">Horarios de atención</div><div className="settings-section-sub">Los pacientes ven estos horarios al pedir turno</div></div>
+                </div>
+                <div className="settings-body">
+                  <div style={{ display:"grid", gridTemplateColumns:"120px 1fr 1fr 80px", gap:"8px 12px", marginBottom:10 }}>
+                    {["Día","Desde","Hasta","Estado"].map(h => <div key={h} style={{ fontSize:11, fontWeight:600, color:"#9CA3AF" }}>{h}</div>)}
+                  </div>
+                  {horarios.map((h,i) => (
+                    <div key={h.dia} className="horario-row">
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <Toggle on={h.activo} onChange={v => setH(i,"activo",v)}/>
+                        <span style={{ fontSize:13, color: h.activo ? "#1F2937" : "#9CA3AF" }}>{h.dia}</span>
+                      </div>
+                      <input className="form-input" type="time" value={h.desde} disabled={!h.activo} style={{ opacity: h.activo ? 1 : .4, padding:"7px 10px" }} onChange={e => setH(i,"desde",e.target.value)}/>
+                      <input className="form-input" type="time" value={h.hasta} disabled={!h.activo} style={{ opacity: h.activo ? 1 : .4, padding:"7px 10px" }} onChange={e => setH(i,"hasta",e.target.value)}/>
+                      <span style={{ fontSize:12, color: h.activo ? "var(--green)" : "#9CA3AF", fontWeight:500 }}>{h.activo ? "Abierto" : "Cerrado"}</span>
+                    </div>
+                  ))}
+                  <div style={{ marginTop:16, display:"flex", justifyContent:"flex-end" }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => addToast("Horarios guardados")}><Ico n="check" s={13}/>Guardar horarios</button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {sec === "notif" && (
+            <>
+              {[
+                { title:"WhatsApp", sub:"Vía Twilio", badge:<span className="badge badge-green">Conectado</span>, items:[{k:"wa_rec",lbl:"Recordatorio de turno",sub:"24hs antes"},{k:"wa_conf",lbl:"Confirmación",sub:"Al agendar"},{k:"wa_canc",lbl:"Cancelación",sub:"Al cancelar"}], extraWA:true },
+                { title:"Email", sub:"Vía Resend", badge:<span className="badge badge-green">Conectado</span>, items:[{k:"email_rec",lbl:"Recordatorio",sub:"Mismo horario WA"},{k:"email_conf",lbl:"Confirmación",sub:"Copia al paciente"}] },
+                { title:"Notificaciones", sub:"En la aplicación", badge:null, items:[{k:"push_nuevo",lbl:"Nuevo paciente",sub:"Al registrarse"},{k:"push_hoy",lbl:"Resumen del día",sub:"Todos los días 8am"},{k:"push_sin",lbl:"Sin seguimiento",sub:"Pacientes +3 meses"}] },
+              ].map(g => (
+                <div key={g.title} className="settings-section" style={{ marginBottom:16 }}>
+                  <div className="settings-section-header">
+                    <div><div className="settings-section-title">{g.title}</div><div className="settings-section-sub">{g.sub}</div></div>
+                    {g.badge}
+                  </div>
+                  <div className="settings-body">
+                    {g.items.map(n => (
+                      <div key={n.k} className="settings-row">
+                        <div><div className="settings-row-label">{n.lbl}</div><div className="settings-row-sub">{n.sub}</div></div>
+                        <Toggle on={notif[n.k]} onChange={v => setNo(n.k, v)}/>
+                      </div>
+                    ))}
+                    {g.extraWA && (
+                      <div className="settings-row" style={{ flexDirection:"column", alignItems:"flex-start", gap:10 }}>
+                        <div className="settings-row-label">Anticipación del recordatorio</div>
+                        <div style={{ display:"flex", gap:8 }}>
+                          {["12","24","48"].map(h => (
+                            <button key={h} onClick={() => setNo("hs",h)} className={`filter-chip ${notif.hs===h?"active":""}`}>{h}hs</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div style={{ display:"flex", justifyContent:"flex-end" }}>
+                <button className="btn btn-primary" onClick={() => addToast("Preferencias guardadas")}><Ico n="check" s={14}/>Guardar preferencias</button>
+              </div>
+            </>
+          )}
+
+          {sec === "plan" && (
+            <>
+              <div className="settings-section" style={{ marginBottom:16 }}>
+                <div className="settings-section-header">
+                  <div><div className="settings-section-title">Tu plan actual</div><div className="settings-section-sub">Premium · Renueva el 01/05/2026</div></div>
+                  <span className="badge badge-green">Premium activo</span>
+                </div>
+                <div className="settings-body">
+                  <div className="plan-grid">
+                    {PLANS.map(plan => (
+                      <div key={plan.id} className={`plan-card ${plan.active?"plan-active":""}`} style={{ position:"relative" }}>
+                        {plan.active && <div className="plan-badge">Plan actual</div>}
+                        <div className="plan-name">{plan.lbl}</div>
+                        <div className="plan-price">{plan.price}</div>
+                        {plan.feat.map(f => <div key={f} className="plan-feature">{f}</div>)}
+                        {!plan.active && (
+                          <button className="btn btn-secondary" style={{ width:"100%", justifyContent:"center", marginTop:14, fontSize:12 }} onClick={() => addToast(plan.id==="enterprise"?"Contactando ventas...":"Procesando cambio...")}>
+                            {plan.id === "enterprise" ? "Contactar ventas" : "Cambiar a este plan"}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="settings-section">
+                <div className="settings-section-header"><div className="settings-section-title">Historial de pagos</div></div>
+                <table className="table">
+                  <thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
+                  <tbody>
+                    {FACTS.map((f,i) => (
+                      <tr key={i}>
+                        <td style={{ color:"#6B7280", fontSize:12 }}>{f.fecha}</td>
+                        <td style={{ fontWeight:500 }}>{f.desc}</td>
+                        <td style={{ fontWeight:600 }}>{f.monto}</td>
+                        <td><span className="badge badge-green">✓ Pagado</span></td>
+                        <td><button className="btn btn-icon btn-ghost" onClick={() => addToast("Descargando...")}><Ico n="clip" s={14}/></button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {sec === "seguridad" && (
+            <>
+              <div className="settings-section" style={{ marginBottom:16 }}>
+                <div className="settings-section-header"><div><div className="settings-section-title">Cambiar contraseña</div><div className="settings-section-sub">Mínimo 8 caracteres</div></div></div>
+                <div className="settings-body">
+                  <div className="form-group"><label className="form-label">Contraseña actual</label><input className="form-input" type="password" placeholder="••••••••" value={seg.pw_actual} onChange={e => setSeg(s => ({...s,pw_actual:e.target.value}))}/></div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Nueva contraseña</label>
+                      <input className="form-input" type="password" placeholder="Mínimo 8 caracteres" value={seg.pw_nueva} onChange={e => setSeg(s => ({...s,pw_nueva:e.target.value}))}/>
+                      {seg.pw_nueva && <><div className="pw-bar"><div className="pw-fill" style={{ width:`${str.w}%`, background:str.c }}/></div><div style={{ fontSize:11, color:str.c, marginTop:4, fontWeight:500 }}>{str.t}</div></>}
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Confirmar contraseña</label>
+                      <input className="form-input" type="password" placeholder="Repetir" value={seg.pw_conf} style={{ borderColor: seg.pw_conf && seg.pw_conf !== seg.pw_nueva ? "#DC2626" : "" }} onChange={e => setSeg(s => ({...s,pw_conf:e.target.value}))}/>
+                      {seg.pw_conf && seg.pw_conf !== seg.pw_nueva && <div style={{ fontSize:11, color:"#DC2626", marginTop:4 }}>Las contraseñas no coinciden</div>}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"flex-end" }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => { if(!seg.pw_actual){addToast("Ingresá tu contraseña actual");return;} if(seg.pw_nueva.length<8){addToast("Mínimo 8 caracteres");return;} if(seg.pw_nueva!==seg.pw_conf){addToast("Las contraseñas no coinciden");return;} setSeg(s=>({...s,pw_actual:"",pw_nueva:"",pw_conf:""})); addToast("Contraseña actualizada"); }}><Ico n="check" s={13}/>Actualizar</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-section" style={{ marginBottom:16 }}>
+                <div className="settings-section-header">
+                  <div><div className="settings-section-title">Autenticación de dos factores</div><div className="settings-section-sub">Capa extra de seguridad</div></div>
+                  <Toggle on={seg.doble} onChange={v => { setSeg(s => ({...s,doble:v})); addToast(v ? "2FA activado" : "2FA desactivado"); }}/>
+                </div>
+                {!seg.doble && <div className="settings-body"><div style={{ background:"#FEF3C7", border:"1px solid #FDE68A", borderRadius:8, padding:"10px 14px", fontSize:13, color:"#D97706" }}>Activar el doble factor protege los datos de tus pacientes.</div></div>}
+              </div>
+
+              <div className="settings-section" style={{ marginBottom:16 }}>
+                <div className="settings-section-header">
+                  <div><div className="settings-section-title">Sesiones activas</div></div>
+                  <button className="btn btn-danger btn-sm" onClick={() => addToast("Sesiones cerradas")}><Ico n="logout" s={13}/>Cerrar todas</button>
+                </div>
+                <div className="settings-body">
+                  {seg.sesiones.map(s => (
+                    <div key={s.id} className="session-row">
+                      <div className="session-icon"><span style={{ fontSize:18 }}>{s.ico}</span></div>
+                      <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:500 }}>{s.dis}</div><div style={{ fontSize:11, color:"#9CA3AF", marginTop:1 }}>{s.lugar} · {s.ul}</div></div>
+                      {s.activa
+                        ? <span className="badge badge-green">Esta sesión</span>
+                        : <button className="btn btn-secondary btn-sm" onClick={() => { setSeg(prev => ({...prev,sesiones:prev.sesiones.filter(x=>x.id!==s.id)})); addToast("Sesión cerrada"); }}>Cerrar</button>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-section" style={{ border:"1px solid #FECACA" }}>
+                <div className="settings-section-header" style={{ background:"#FFF5F5" }}>
+                  <div><div className="settings-section-title" style={{ color:"#DC2626" }}>Zona de peligro</div><div className="settings-section-sub">Acciones irreversibles</div></div>
+                </div>
+                <div className="settings-body">
+                  <div className="settings-row">
+                    <div><div className="settings-row-label">Exportar mis datos</div><div className="settings-row-sub">ZIP con todos los pacientes e historial</div></div>
+                    <button className="btn btn-secondary btn-sm" onClick={() => addToast("Preparando exportación...")}><Ico n="clip" s={13}/>Exportar</button>
+                  </div>
+                  <div className="settings-row">
+                    <div><div className="settings-row-label" style={{ color:"#DC2626" }}>Eliminar cuenta</div><div className="settings-row-sub">Acción permanente e irreversible</div></div>
+                    <button className="btn btn-danger btn-sm" onClick={() => addToast("Contactá soporte para eliminar tu cuenta")}><Ico n="trash" s={13}/>Eliminar</button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CONSULTA FULLPAGE ───────────────────────────────────────
+function ConsultaPage({ pac, onClose, onSave }) {
+  const [f, setF] = useState({ motivo:"", fecha:new Date().toISOString().split("T")[0], presion_sis:"", presion_dia:"", fc:"", temp:"", spo2:"", peso:"", talla:"", examen_fisico:"", dx_consulta:"", indicaciones:"", estudios:"", meds_consulta:"", meds_cambios:"", receta:false, proxima_fecha:"", proxima_motivo:"", notas:"" });
+  const [busy, setBusy] = useState(false);
+  const set = (k,v) => setF(p => ({...p,[k]:v}));
+
+  const imc = f.peso && f.talla ? (parseFloat(f.peso)/Math.pow(parseFloat(f.talla)/100,2)).toFixed(1) : null;
+  const imcLbl = imc ? (imc<18.5?"Bajo peso":imc<25?"Normal":imc<30?"Sobrepeso":"Obesidad") : null;
+  const imcC   = imc ? (imc<18.5?"#D97706":imc<25?"#16A34A":imc<30?"#D97706":"#DC2626") : null;
+
+  const save = async () => {
+    if (!f.motivo) return;
+    setBusy(true); await new Promise(r => setTimeout(r, 600));
+    onSave(f); setBusy(false);
+  };
+
+  const Sec = ({ title, children }) => (
+    <div className="cp-sec">
+      <div className="cp-sec-header">{title}</div>
+      <div className="cp-sec-body">{children}</div>
+    </div>
+  );
+
+  return (
+    <div className="cp-overlay">
+      <div className="cp-topbar">
+        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><Ico n="x" s={16}/></button>
+          <div>
+            <div style={{ fontSize:17, fontWeight:600 }}>Nueva Consulta</div>
+            <div style={{ fontSize:12, color:"#6B7280", marginTop:1 }}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" disabled={busy||!f.motivo} onClick={save}>{busy?<div className="spinner"/>:<Ico n="check" s={14}/>}Registrar</button>
+        </div>
+      </div>
+
+      <div className="cp-body">
+        <div className="cp-pac-banner">
+          <div className="pac-av" style={{ background:pac.color, width:44, height:44, fontSize:15 }}>{pac.av}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:16, fontWeight:600, color:"#fff" }}>{pac.nombre} {pac.apellido}</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,.7)", marginTop:2 }}>{pac.edad?`${pac.edad}a · `:""}{pac.dx||"Sin diagnóstico"}</div>
+          </div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,.5)" }}>Última: {pac.hc?.[0]?.fecha ? fmtD(pac.hc[0].fecha) : "—"}</div>
+        </div>
+
+        <div className="cp-grid2">
+          <Sec title="Motivo de consulta">
+            <div className="form-group"><label className="form-label">Motivo principal *</label><input className="form-input" placeholder="Control mensual..." value={f.motivo} onChange={e => set("motivo",e.target.value)}/></div>
+            <div className="form-group" style={{ marginBottom:0 }}><label className="form-label">Fecha</label><input className="form-input" type="date" value={f.fecha} onChange={e => set("fecha",e.target.value)}/></div>
+          </Sec>
+          <Sec title="Notas generales">
+            <textarea className="form-input" rows={5} style={{ resize:"none" }} placeholder="Observaciones, contexto..." value={f.notas} onChange={e => set("notas",e.target.value)}/>
+          </Sec>
+        </div>
+
+        <div className="cp-sec cp-full">
+          <div className="cp-sec-header">Signos vitales</div>
+          <div className="cp-sec-body">
+            <div className="cp-grid4">
+              <div className="form-group">
+                <label className="form-label">Presión arterial (mmHg)</label>
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  <input className="form-input" placeholder="120" style={{ textAlign:"center" }} value={f.presion_sis} onChange={e => set("presion_sis",e.target.value)}/>
+                  <span style={{ color:"#9CA3AF", fontWeight:700 }}>/</span>
+                  <input className="form-input" placeholder="80" style={{ textAlign:"center" }} value={f.presion_dia} onChange={e => set("presion_dia",e.target.value)}/>
+                </div>
+              </div>
+              <div className="form-group"><label className="form-label">Frec. cardíaca (lpm)</label><input className="form-input" placeholder="72" type="number" value={f.fc} onChange={e => set("fc",e.target.value)}/></div>
+              <div className="form-group"><label className="form-label">Temperatura (°C)</label><input className="form-input" placeholder="36.5" type="number" step="0.1" value={f.temp} onChange={e => set("temp",e.target.value)}/></div>
+              <div className="form-group"><label className="form-label">Saturación O2 (%)</label><input className="form-input" placeholder="98" type="number" value={f.spo2} onChange={e => set("spo2",e.target.value)}/></div>
+            </div>
+            <div className="cp-grid3" style={{ marginBottom:0 }}>
+              <div className="form-group"><label className="form-label">Peso (kg)</label><input className="form-input" placeholder="70" type="number" step="0.1" value={f.peso} onChange={e => set("peso",e.target.value)}/></div>
+              <div className="form-group"><label className="form-label">Talla (cm)</label><input className="form-input" placeholder="170" type="number" value={f.talla} onChange={e => set("talla",e.target.value)}/></div>
+              <div className="form-group">
+                <label className="form-label">IMC calculado</label>
+                {imc
+                  ? <div className="imc-badge" style={{ background:`${imcC}18`, color:imcC, border:`1px solid ${imcC}40` }}>
+                      <span style={{ fontSize:20, fontWeight:700 }}>{imc}</span>
+                      <span style={{ fontSize:12, fontWeight:600 }}>{imcLbl}</span>
+                    </div>
+                  : <input className="form-input" readOnly value="Ingresá peso y talla" style={{ color:"#9CA3AF" }}/>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="cp-grid2">
+          <Sec title="Evolución clínica">
+            <div className="form-group"><label className="form-label">Examen físico</label><textarea className="form-input" rows={3} style={{ resize:"none" }} placeholder="Hallazgos..." value={f.examen_fisico} onChange={e => set("examen_fisico",e.target.value)}/></div>
+            <div className="form-group" style={{ marginBottom:0 }}><label className="form-label">Diagnóstico de esta consulta</label><input className="form-input" placeholder="Puede diferir del principal..." value={f.dx_consulta} onChange={e => set("dx_consulta",e.target.value)}/></div>
+          </Sec>
+          <Sec title="Indicaciones y estudios">
+            <div className="form-group"><label className="form-label">Indicaciones al paciente</label><textarea className="form-input" rows={3} style={{ resize:"none" }} placeholder="Plan terapéutico..." value={f.indicaciones} onChange={e => set("indicaciones",e.target.value)}/></div>
+            <div className="form-group" style={{ marginBottom:0 }}><label className="form-label">Estudios pedidos</label><input className="form-input" placeholder="Hemograma, RX tórax..." value={f.estudios} onChange={e => set("estudios",e.target.value)}/></div>
+          </Sec>
+        </div>
+
+        <div className="cp-grid2">
+          <Sec title="Medicación">
+            <div className="form-group"><label className="form-label">Medicación indicada</label><input className="form-input" placeholder="Enalapril 10mg..." value={f.meds_consulta} onChange={e => set("meds_consulta",e.target.value)}/></div>
+            <div className="form-group"><label className="form-label">Cambios respecto a anterior</label><input className="form-input" placeholder="Se suspende X, se agrega Y..." value={f.meds_cambios} onChange={e => set("meds_cambios",e.target.value)}/></div>
+            <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", fontSize:13 }}>
+              <input type="checkbox" checked={f.receta} onChange={e => set("receta",e.target.checked)} style={{ width:15, height:15, accentColor:"var(--accent)" }}/>
+              Se emitió receta en esta consulta
+            </label>
+          </Sec>
+          <Sec title="Próxima cita sugerida">
+            <div style={{ background:"#FEF3C7", border:"1px solid #FDE68A", borderRadius:8, padding:"10px 12px", fontSize:12, color:"#D97706", marginBottom:14 }}>Al guardar, pre-completa el formulario de nuevo turno.</div>
+            <div className="form-group"><label className="form-label">Fecha sugerida</label><input className="form-input" type="date" value={f.proxima_fecha} onChange={e => set("proxima_fecha",e.target.value)}/></div>
+            <div className="form-group" style={{ marginBottom:0 }}><label className="form-label">Motivo</label><input className="form-input" placeholder="Control postratamiento..." value={f.proxima_motivo} onChange={e => set("proxima_motivo",e.target.value)}/></div>
+          </Sec>
+        </div>
+
+        <div className="card" style={{ padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ fontSize:13, color: f.motivo ? "var(--green)" : "#9CA3AF", fontWeight:500 }}>{f.motivo ? "✓ Listo para registrar" : "Completá el motivo para continuar"}</div>
+          <div style={{ display:"flex", gap:10 }}>
+            <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+            <button className="btn btn-primary" disabled={busy||!f.motivo} onClick={save}>{busy?<div className="spinner"/>:<Ico n="check" s={14}/>}Registrar Consulta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MODALS ─────────────────────────────────────────────────
+function ModalPaciente({ onClose, onSave }) {
+  const [f, setF] = useState({ nombre:"", ap:"", dni:"", tel:"", email:"", dob:"", dx:"", meds:"", notas:"", tipo:"recurrente" });
+  const [busy, setBusy] = useState(false);
+  const set = (k,v) => setF(p => ({...p,[k]:v}));
+  const save = async () => { if(!f.nombre)return; setBusy(true); await new Promise(r=>setTimeout(r,500)); onSave(f); setBusy(false); };
+  return (
+    <div className="modal-overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header"><div className="modal-title">Nuevo Paciente</div><button className="btn btn-ghost btn-icon" onClick={onClose}><Ico n="x" s={16}/></button></div>
+        <div className="modal-body">
+          <div className="form-row"><div className="form-group"><label className="form-label">Nombre *</label><input className="form-input" placeholder="María" value={f.nombre} onChange={e=>set("nombre",e.target.value)}/></div><div className="form-group"><label className="form-label">Apellido</label><input className="form-input" placeholder="López" value={f.ap} onChange={e=>set("ap",e.target.value)}/></div></div>
+          <div className="form-row"><div className="form-group"><label className="form-label">DNI</label><input className="form-input" placeholder="30.123.456" value={f.dni} onChange={e=>set("dni",e.target.value)}/></div><div className="form-group"><label className="form-label">Fecha de nacimiento</label><input className="form-input" type="date" value={f.dob} onChange={e=>set("dob",e.target.value)}/></div></div>
+          <div className="form-row"><div className="form-group"><label className="form-label">Teléfono</label><input className="form-input" placeholder="+54 11..." value={f.tel} onChange={e=>set("tel",e.target.value)}/></div><div className="form-group"><label className="form-label">Email</label><input className="form-input" placeholder="correo@..." value={f.email} onChange={e=>set("email",e.target.value)}/></div></div>
+          <div className="form-group"><label className="form-label">Diagnóstico</label><input className="form-input" placeholder="Hipertensión arterial..." value={f.dx} onChange={e=>set("dx",e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">Medicación actual</label><input className="form-input" placeholder="Enalapril 10mg..." value={f.meds} onChange={e=>set("meds",e.target.value)}/></div>
+          <div className="form-group">
+            <label className="form-label">Tipo de paciente</label>
+            <div style={{ display:"flex", gap:8 }}>
+              {["recurrente","nuevo"].map(t => (
+                <button key={t} onClick={() => set("tipo",t)} className={`filter-chip ${f.tipo===t?"active":""}`} style={{ flex:1, justifyContent:"center" }}>
+                  {t.charAt(0).toUpperCase()+t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy} onClick={save}>{busy&&<div className="spinner"/>}Guardar Paciente</button></div>
+      </div>
+    </div>
+  );
+}
+
+function ModalTurno({ pacs, prePacId, onClose, onSave }) {
+  const [f, setF] = useState({ pid:prePacId||"", fecha:"", hora:"", motivo:"" });
+  const [busy, setBusy] = useState(false);
+  const set = (k,v) => setF(p => ({...p,[k]:v}));
+  const save = async () => { if(!f.pid||!f.fecha||!f.hora)return; setBusy(true); await new Promise(r=>setTimeout(r,500)); onSave(f); setBusy(false); };
+  return (
+    <div className="modal-overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header"><div className="modal-title">Nuevo Turno</div><button className="btn btn-ghost btn-icon" onClick={onClose}><Ico n="x" s={16}/></button></div>
+        <div className="modal-body">
+          <div className="form-group"><label className="form-label">Paciente *</label><select className="form-input" value={f.pid} onChange={e=>set("pid",e.target.value)}><option value="">Seleccionar...</option>{pacs.map(p=><option key={p.id} value={p.id}>{p.nombre} {p.apellido}</option>)}</select></div>
+          <div className="form-row"><div className="form-group"><label className="form-label">Fecha *</label><input className="form-input" type="date" value={f.fecha} onChange={e=>set("fecha",e.target.value)}/></div><div className="form-group"><label className="form-label">Hora *</label><input className="form-input" type="time" value={f.hora} onChange={e=>set("hora",e.target.value)}/></div></div>
+          <div className="form-group"><label className="form-label">Motivo</label><input className="form-input" placeholder="Control rutinario..." value={f.motivo} onChange={e=>set("motivo",e.target.value)}/></div>
+        </div>
+        <div className="modal-footer"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy} onClick={save}>{busy&&<div className="spinner"/>}Agendar Turno</button></div>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP ─────────────────────────────────────────────────────
+function App() {
+  const [logged,  setLogged]  = useState(false);
+  const [medico,  setMedico]  = useState(null);
+  const [tab,     setTab]     = useState("dashboard");
+  const [view,    setView]    = useState(null);
+  const [modal,   setModal]   = useState(null);
+  const [toasts,  setToasts]  = useState([]);
+  const [pacs,    setPacs]    = useState([]);
+  const [search,  setSearch]  = useState("");
+
+  const addToast = useCallback(msg => {
+    const id = ++_tid;
+    setToasts(t => [...t, { id, msg }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  }, []);
+
+  const removeToast = id => setToasts(t => t.filter(x => x.id !== id));
+
+  const syncPacs = useCallback(() => {
+    setPacs(DB.pacientes.map(p => ({ ...p, av: getAv(p.nombre,p.apellido), color: getColor(p.id), edad: calcEdad(p.dob) })));
+  }, []);
+
+  useEffect(() => { if (logged) syncPacs(); }, [logged, syncPacs]);
+
+  const handleLogin = () => { setLogged(true); setMedico(DB.medico); };
+  const handleOut   = async () => { await supabase.auth.signOut(); setLogged(false); setMedico(null); DB.medico=null; setTab("dashboard"); setView(null); };
+
+  const savePaciente = f => {
+    const id = "p"+Date.now();
+    DB.pacientes.unshift({ id, nombre:f.nombre, apellido:f.ap||"—", dob:f.dob||null, dni:f.dni, tel:f.tel, email:f.email, tipo:f.tipo, dx:f.dx, meds:f.meds, notas:f.notas, turnos:[], hc:[], adj:[] });
+    DB.recs[id] = []; syncPacs(); addToast("Paciente agregado"); setModal(null);
+  };
+
+  const saveTurno = f => {
+    const id = "t"+Date.now();
+    const t = { id, fecha:f.fecha, hora:f.hora, motivo:f.motivo||"Control", estado:"programado" };
+    const pac = DB.pacientes.find(p => p.id === f.pid);
+    if (pac) { if (!pac.turnos) pac.turnos=[]; pac.turnos.push(t); }
+    DB.recs[id] = []; syncPacs(); addToast("Turno agendado"); setModal(null);
+  };
+
+  const selPac = view?.type === "detail" ? pacs.find(p => p.id === view.id) : null;
+
+  const NAV = [
+    { id:"dashboard", ico:"home",     lbl:"Inicio" },
+    { id:"patients",  ico:"users",    lbl:"Pacientes", badge: pacs.filter(p=>p.tipo==="nuevo").length },
+    { id:"calendar",  ico:"cal",      lbl:"Agenda",    badge: pacs.flatMap(p=>p.turnos||[]).filter(t=>t.fecha===HOY).length || 0 },
+    { id:"analytics", ico:"chart",    lbl:"Métricas" },
+    { id:"settings",  ico:"settings", lbl:"Ajustes" },
+  ];
+
+  const topTitle = view?.type==="detail" && selPac
+    ? selPac.nombre + " " + selPac.apellido
+    : { dashboard:"Inicio", patients:"Pacientes", calendar:"Agenda", analytics:"Métricas", settings:"Ajustes" }[tab];
+
+  if (!logged) return <Auth onLogin={handleLogin}/>;
+
+  return (
+    <div className="app">
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div className="sb-logo">
+          <div className="sb-logo-icon"><Ico n="shield" s={18} c="#fff"/></div>
+          <div className="sb-logo-text">MediTrack</div>
+          <div className="sb-logo-badge">PRO</div>
+        </div>
+
+        <div className="sb-scroll">
+          <div className="sb-section">Principal</div>
+          {NAV.map(n => (
+            <button key={n.id} className={`sb-item ${(tab===n.id&&!view)||("patients"===n.id&&view?.type==="detail")?"active":""}`}
+              onClick={() => { setTab(n.id); setView(null); }}>
+              <Ico n={n.ico} s={16}/>{n.lbl}
+              {n.badge > 0 && <span className="sb-badge">{n.badge}</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="sb-footer">
+          <div className="sb-user" onClick={handleOut} title="Cerrar sesión">
+            <div className="sb-av">{getAv(medico?.nombre||"",medico?.apellido||"")}</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div className="sb-uname">Dr. {medico?.nombre} {medico?.apellido}</div>
+              <div className="sb-urole">{medico?.especialidad}</div>
+            </div>
+            <Ico n="logout" s={15} c="#9CA3AF"/>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <div className="main">
+        <div className="topbar">
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {view?.type==="detail" && (
+              <button className="btn btn-ghost btn-icon" onClick={() => setView(null)}><Ico n="back" s={16}/></button>
+            )}
+            <div className="topbar-title">{topTitle}</div>
+          </div>
+
+          <div className="topbar-search">
+            <Ico n="search" s={15} c="#9CA3AF"/>
+            <input placeholder="Buscar pacientes, turnos..." value={search} onChange={e => setSearch(e.target.value)}/>
+          </div>
+
+          <div className="topbar-right">
+            <button className="icon-btn"><Ico n="bell" s={17}/></button>
+            {tab === "dashboard" && (
+              <button className="btn btn-primary" onClick={() => setModal("paciente")}><Ico n="plus" s={15}/>Nuevo Paciente</button>
+            )}
+          </div>
+        </div>
+
+        <div className="content">
+          {tab==="dashboard" && !view && <Dashboard pacs={pacs} addToast={addToast}/>}
+          {tab==="patients"  && !view && <Patients pacs={pacs} onSelect={id=>setView({type:"detail",id})} onNew={()=>setModal("paciente")}/>}
+          {tab==="patients"  && view?.type==="detail" && selPac && <PatientDetail pac={selPac} onBack={()=>setView(null)} addToast={addToast} syncPacs={syncPacs} onNewTurno={()=>setModal("turno-from-patient")}/>}
+          {tab==="calendar"  && <CalendarPage pacs={pacs} addToast={addToast} onNew={()=>setModal("turno")}/>}
+          {tab==="analytics" && <Analytics pacs={pacs}/>}
+          {tab==="settings"  && <Settings medico={medico} addToast={addToast}/>}
+        </div>
+      </div>
+
+      {modal==="paciente"           && <ModalPaciente onClose={()=>setModal(null)} onSave={savePaciente}/>}
+      {modal==="turno"              && <ModalTurno pacs={pacs} prePacId={null} onClose={()=>setModal(null)} onSave={saveTurno}/>}
+      {modal==="turno-from-patient" && selPac && <ModalTurno pacs={pacs} prePacId={selPac.id} onClose={()=>setModal(null)} onSave={saveTurno}/>}
+
+      <Toasts list={toasts} remove={removeToast}/>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
