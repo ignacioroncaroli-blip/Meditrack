@@ -1111,17 +1111,22 @@ function Analytics({ pacs }) {
   const consXmes = Array.from({length:6}, (_,i) => {
     const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1);
     const cnt = allHC.filter(c => { const cd = new Date(c.fecha); return cd.getFullYear()===d.getFullYear()&&cd.getMonth()===d.getMonth(); }).length;
-    return { lbl: MESES_S[d.getMonth()], cnt: cnt || [2,3,5,4,6,8][i] };
+    return { lbl: MESES_S[d.getMonth()], cnt };
   });
   const maxC = Math.max(...consXmes.map(d => d.cnt), 1);
 
   const dxMap = {}; pacs.forEach(p => { if(p.dx) dxMap[p.dx] = (dxMap[p.dx]||0)+1; });
   const dxTop = Object.entries(dxMap).sort((a,b) => b[1]-a[1]).slice(0,5);
-  const demoTop = [["Hipertension arterial",4],["Diabetes tipo 2",3],["Ansiedad leve",2],["Hipotiroidismo",2],["Insuf. cardiaca",1]];
 
   const diasSinV = p => { const u=(p.hc||[]).map(c=>c.fecha).sort().at(-1); if(!u)return 999; return Math.floor((Date.now()-new Date(u))/86400000); };
-  const sv30=pacs.filter(p=>diasSinV(p)>30).length||2, sv60=pacs.filter(p=>diasSinV(p)>60).length||1, sv90=pacs.filter(p=>diasSinV(p)>90).length||0;
-  const total = allT.length || 9;
+  const sv30=pacs.filter(p=>diasSinV(p)>30).length, sv60=pacs.filter(p=>diasSinV(p)>60).length, sv90=pacs.filter(p=>diasSinV(p)>90).length;
+
+  const totalT = allT.length;
+  const completados = allT.filter(t => t.estado==="completado"||t.estado==="realizado").length;
+  const tasaAsist = totalT > 0 ? Math.round((completados/totalT)*100)+"%" : "—";
+
+  const diasCount = {}; allT.forEach(t => { if(t.fecha){ const d=new Date(t.fecha+`T12:00:00`); const nom=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"][d.getDay()]; diasCount[nom]=(diasCount[nom]||0)+1; } });
+  const diaMasOcupado = Object.entries(diasCount).sort((a,b)=>b[1]-a[1])[0]?.[0] || "—";
 
   return (
     <div>
@@ -1132,9 +1137,9 @@ function Analytics({ pacs }) {
       <div className="stats-grid">
         {[
           { icon:"clip",  iconBg:"#EEF2FF", iconC:"var(--accent)", lbl:"Consultas este mes", val:consXmes.at(-1)?.cnt||0, delta:"en historia clínica" },
-          { icon:"check", iconBg:"#DCFCE7", iconC:"var(--green)",  lbl:"Tasa de asistencia", val:"94%", delta:"turnos completados" },
+          { icon:"check", iconBg:"#DCFCE7", iconC:"var(--green)",  lbl:"Tasa de asistencia", val:tasaAsist, delta:"turnos completados" },
           { icon:"clock", iconBg:"#FEF3C7", iconC:"var(--amber)",  lbl:"Sin visita +60 días", val:sv60, delta:"requieren seguimiento" },
-          { icon:"cal",   iconBg:"#F3F4F6", iconC:"#6B7280",       lbl:"Día más ocupado", val:"Martes", delta:"mayor carga histórica" },
+          { icon:"cal",   iconBg:"#F3F4F6", iconC:"#6B7280",       lbl:"Día más ocupado", val:diaMasOcupado, delta:"mayor carga histórica" },
         ].map((s,i) => (
           <div key={i} className="stat-card">
             <div className="stat-icon" style={{ background: s.iconBg }}><Ico n={s.icon} s={20} c={s.iconC}/></div>
@@ -1164,7 +1169,7 @@ function Analytics({ pacs }) {
         <div className="card">
           <div className="card-header"><div className="card-title">Diagnósticos frecuentes</div></div>
           <div style={{ padding:"20px 24px" }}>
-            {(dxTop.length ? dxTop : demoTop).map(([dx,n],i) => (
+            {dxTop.length ? dxTop.map(([dx,n],i) => (
               <div key={dx} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                 <div style={{ fontSize:12, color:"#9CA3AF", minWidth:14, fontWeight:600 }}>{i+1}</div>
                 <div style={{ flex:1 }}>
@@ -1173,11 +1178,11 @@ function Analytics({ pacs }) {
                     <span style={{ fontWeight:600 }}>{n}</span>
                   </div>
                   <div style={{ height:4, background:"#F3F4F6", borderRadius:2, overflow:"hidden" }}>
-                    <div style={{ height:"100%", width:`${Math.round((n/4)*100)}%`, background: COLORS[i%COLORS.length], borderRadius:2 }}/>
+                    <div style={{ height:"100%", width:`${Math.round((n/dxTop[0][1])*100)}%`, background: COLORS[i%COLORS.length], borderRadius:2 }}/>
                   </div>
                 </div>
               </div>
-            ))}
+            )) : <div style={{ textAlign:"center", color:"#9CA3AF", fontSize:13, padding:"20px 0" }}>Sin diagnósticos cargados aún</div>}
           </div>
         </div>
       </div>
@@ -1208,10 +1213,10 @@ function Analytics({ pacs }) {
         </div>
 
         <div className="card">
-          <div className="card-header"><div className="card-title">Tasa de asistencia</div><div style={{ fontSize:22, fontWeight:700, color:"var(--green)" }}>94%</div></div>
+          <div className="card-header"><div className="card-title">Tasa de asistencia</div><div style={{ fontSize:22, fontWeight:700, color:"var(--green)" }}>{tasaAsist}</div></div>
           <div style={{ padding:"20px 24px" }}>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
-              {[{lbl:"Asistieron",val:total-1,c:"var(--green)",bg:"#DCFCE7"},{lbl:"Cancelaron",val:1,c:"var(--amber)",bg:"#FEF3C7"},{lbl:"Ausentes",val:0,c:"var(--red)",bg:"#FEE2E2"},{lbl:"Total",val:total,c:"var(--accent)",bg:"#EEF2FF"}].map(s=>(
+              {(()=>{ const cancelados=allT.filter(t=>t.estado==="cancelado").length; const ausentes=allT.filter(t=>t.estado==="ausente").length; return [{lbl:"Asistieron",val:completados,c:"var(--green)",bg:"#DCFCE7"},{lbl:"Cancelaron",val:cancelados,c:"var(--amber)",bg:"#FEF3C7"},{lbl:"Ausentes",val:ausentes,c:"var(--red)",bg:"#FEE2E2"},{lbl:"Total",val:totalT,c:"var(--accent)",bg:"#EEF2FF"}]; })().map(s=>(
                 <div key={s.lbl} style={{ padding:"14px", borderRadius:8, background:s.bg }}>
                   <div style={{ fontSize:24, fontWeight:700, color:s.c }}>{s.val}</div>
                   <div style={{ fontSize:11, color:s.c, fontWeight:500, marginTop:2 }}>{s.lbl}</div>
@@ -1219,7 +1224,7 @@ function Analytics({ pacs }) {
               ))}
             </div>
             <div style={{ background:"#F3F4F6", height:6, borderRadius:3, overflow:"hidden" }}>
-              <div style={{ height:"100%", width:"94%", background:"var(--green)", borderRadius:3 }}/>
+              <div style={{ height:"100%", width:`${totalT>0?Math.round((completados/totalT)*100):0}%`, background:"var(--green)", borderRadius:3 }}/>
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, fontSize:11, color:"#9CA3AF" }}>
               <span>0%</span><span style={{ color:"var(--green)", fontWeight:600 }}>Meta: 90%</span><span>100%</span>
@@ -1232,7 +1237,7 @@ function Analytics({ pacs }) {
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────
-function Settings({ medico, addToast }) {
+function Settings({ medico, addToast, onMedicoUpdate }) {
   const [sec, setSec] = useState("perfil");
   const [perfil, setPerfil] = useState({ nombre:medico?.nombre||"Alejandro", apellido:medico?.apellido||"Ramirez", especialidad:medico?.especialidad||"Clinica Medica", matricula:"MN 98.432", email:medico?.email||"dr@consultorio.com", tel:"+54 11 4500-1234", bio:"Médico clínico con 15 años de experiencia." });
   const [consul, setConsul] = useState({ nombre:"Consultorio Dr. Ramirez", direccion:"Av. Santa Fe 1234, Piso 3", ciudad:"Buenos Aires", cp:"C1059", telefono:"+54 11 4800-5678", email:"turnos@drramirez.com.ar", web:"www.drramirez.com.ar" });
@@ -1278,7 +1283,7 @@ function Settings({ medico, addToast }) {
             <div className="settings-section">
               <div className="settings-section-header">
                 <div><div className="settings-section-title">Perfil del médico</div><div className="settings-section-sub">Tu información personal y profesional</div></div>
-                <button className="btn btn-primary btn-sm" onClick={() => addToast("Perfil actualizado")}><Ico n="check" s={13}/>Guardar</button>
+                <button className="btn btn-primary btn-sm" onClick={() => { DB.medico = { ...DB.medico, ...perfil }; onMedicoUpdate({ ...DB.medico }); addToast("Perfil actualizado"); }}><Ico n="check" s={13}/>Guardar</button>
               </div>
               <div className="settings-body">
                 <div className="form-row">
@@ -1804,7 +1809,7 @@ function App() {
           {tab==="patients"  && view?.type==="detail" && selPac && <PatientDetail pac={selPac} onBack={()=>setView(null)} addToast={addToast} syncPacs={syncPacs} onNewTurno={()=>setModal("turno-from-patient")}/>}
           {tab==="calendar"  && <CalendarPage pacs={pacs} addToast={addToast} onNew={()=>setModal("turno")}/>}
           {tab==="analytics" && <Analytics pacs={pacs}/>}
-          {tab==="settings"  && <Settings medico={medico} addToast={addToast}/>}
+          {tab==="settings"  && <Settings medico={medico} addToast={addToast} onMedicoUpdate={setMedico}/>}
         </div>
       </div>
 
