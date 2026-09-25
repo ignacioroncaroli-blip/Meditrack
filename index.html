@@ -436,6 +436,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
 .page-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cal-mes-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .imc-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--r); font-size: 13px; font-weight: 600; margin-top: 6px; }
@@ -466,6 +467,10 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
   .topbar { padding: 0 14px; }
   .topbar-search { display: none; }
   .topbar-title { font-size: 15px; }
+  .cal-mes-layout { grid-template-columns: 1fr; }
+  .cal-view-toggle { flex-wrap: wrap; }
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-header > div:last-child { width: 100%; justify-content: space-between; }
   .topbar-right { gap: 4px; }
 
   /* Bottom navigation */
@@ -946,6 +951,7 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
   const [tab, setTab] = useState("hc");
   const [showConsulta, setShowConsulta] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [selConsulta, setSelConsulta] = useState(null);
   const [recOpen, setRecOpen] = useState(false);
   const [recs, setRecs] = useState([...(DB.recs[pac.turnos?.[0]?.id] || [])]);
   const [uploading, setUploading] = useState(false);
@@ -1087,7 +1093,7 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
               {(pac.hc||[]).map(c => {
                 const ex = (() => { try { return typeof c.extra === "string" ? JSON.parse(c.extra) : (c.extra||{}); } catch(e){ return {}; } })();
                 return (
-                <div key={c.id} className="hci">
+                <div key={c.id} className="hci" style={{ cursor:"pointer" }} onClick={() => setSelConsulta({c, ex})}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <div style={{ fontSize:14, fontWeight:600 }}>{c.motivo}</div>
                     <div style={{ fontSize:12, color:"#9CA3AF" }}>{fmtD(c.fecha)}</div>
@@ -1149,6 +1155,90 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
         if (error) { addToast("Error al actualizar"); console.error(error); return; }
         await syncPacs(); addToast("Paciente actualizado"); setShowEdit(false);
       }} addToast={addToast}/>}
+
+      {selConsulta && (() => {
+        const { c, ex } = selConsulta;
+        return (
+          <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setSelConsulta(null)}>
+            <div className="modal" style={{ maxWidth:560 }}>
+              <div className="modal-header">
+                <div>
+                  <div className="modal-title">{c.motivo || "Consulta"}</div>
+                  <div style={{ fontSize:12, color:"#9CA3AF", marginTop:2 }}>{fmtD(c.fecha)}</div>
+                </div>
+                <button className="btn btn-ghost btn-icon" onClick={() => setSelConsulta(null)}><Ico n="x" s={16}/></button>
+              </div>
+              <div className="modal-body" style={{ maxHeight:"70vh", overflowY:"auto" }}>
+
+                {/* Signos vitales */}
+                {(ex.sis || ex.fc || ex.temp || ex.spo2 || ex.peso || ex.talla) && (
+                  <div style={{ background:"var(--bg)", borderRadius:8, padding:"12px 14px", marginBottom:16 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".5px", marginBottom:10 }}>Signos vitales</div>
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      {ex.sis && ex.dia && <span className="vpill" style={{ background:"#FEE2E2", color:"#DC2626", fontSize:13, padding:"4px 10px" }}>PA {ex.sis}/{ex.dia} mmHg</span>}
+                      {ex.fc   && <span className="vpill" style={{ background:"#FEF3C7", color:"#D97706", fontSize:13, padding:"4px 10px" }}>FC {ex.fc} lpm</span>}
+                      {ex.temp && <span className="vpill" style={{ background:"#F3F4F6", color:"#6B7280", fontSize:13, padding:"4px 10px" }}>Temp {ex.temp}°C</span>}
+                      {ex.spo2 && <span className="vpill" style={{ background:"#DBEAFE", color:"#1D4ED8", fontSize:13, padding:"4px 10px" }}>SpO₂ {ex.spo2}%</span>}
+                      {ex.peso && <span className="vpill" style={{ background:"#DCFCE7", color:"#16A34A", fontSize:13, padding:"4px 10px" }}>{ex.peso} kg</span>}
+                      {ex.talla && <span className="vpill" style={{ background:"#DCFCE7", color:"#16A34A", fontSize:13, padding:"4px 10px" }}>{ex.talla} cm</span>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Diagnóstico */}
+                {c.diagnostico && (
+                  <div style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Diagnóstico</div>
+                    <div style={{ fontSize:14, color:"var(--text)" }}>{c.diagnostico}</div>
+                  </div>
+                )}
+
+                {/* Evolución */}
+                {c.evolucion && (
+                  <div style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Evolución</div>
+                    <div style={{ fontSize:14, color:"var(--text)", lineHeight:1.6, background:"var(--bg)", borderRadius:8, padding:"10px 14px", fontStyle:"italic" }}>{c.evolucion}</div>
+                  </div>
+                )}
+
+                {/* Indicaciones */}
+                {c.indicaciones && (
+                  <div style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Indicaciones</div>
+                    <div style={{ fontSize:14, color:"var(--text)", lineHeight:1.6 }}>{c.indicaciones}</div>
+                  </div>
+                )}
+
+                {/* Estudios */}
+                {ex.estudios && (
+                  <div style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Estudios solicitados</div>
+                    <div style={{ fontSize:14, color:"var(--text)" }}>{ex.estudios}</div>
+                  </div>
+                )}
+
+                {/* Medicación */}
+                {ex.meds_consulta && (
+                  <div style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Medicación indicada</div>
+                    <div style={{ fontSize:14, color:"var(--text)" }}>{ex.meds_consulta}</div>
+                  </div>
+                )}
+
+                {/* Receta + próxima cita */}
+                <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:4 }}>
+                  {ex.receta && <span className="badge badge-blue">📋 Receta emitida</span>}
+                  {ex.proxima_fecha && <span className="badge badge-amber">📅 Próxima cita: {fmtD(ex.proxima_fecha)}</span>}
+                </div>
+
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setSelConsulta(null)}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1307,7 +1397,7 @@ function CalendarPage({ pacs, addToast, onNew }) {
       {calView === "semana" && <div className="week-scroll">{renderSemana()}</div>}
       {calView === "año" && renderAnio()}
       {calView === "mes" && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:20, alignItems:"start" }}>
+        <div className="cal-mes-layout">
           <div className="card" style={{ padding:24 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
               <div style={{ fontSize:18, fontWeight:700 }}>{MESES_L[month]} {year}</div>
