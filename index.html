@@ -876,7 +876,7 @@ function Dashboard({ pacs, addToast, onSelectPac }) {
             {pacs.slice(0,5).map(p => {
               const prT = (p.turnos||[]).filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha))[0];
               return (
-                <tr key={p.id}>
+                <tr key={p.id} style={{ cursor:"pointer" }} onClick={() => onSelectPac(p.id)}>
                   <td><div className="pac-cell"><div className="pac-av" style={{ background: p.color }}>{p.av}</div><div><div style={{ fontWeight:500 }}>{p.nombre} {p.apellido}</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{p.dni}</div></div></div></td>
                   <td style={{ color:"#374151" }}>{p.dx || "—"}</td>
                   <td style={{ color:"#6B7280" }}>{p.hc?.[0]?.fecha ? fmtD(p.hc[0].fecha) : "—"}</td>
