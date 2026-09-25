@@ -671,7 +671,7 @@ function Auth({ onLogin }) {
 }
 
 // ─── DASHBOARD ───────────────────────────────────────────────
-function Dashboard({ pacs, addToast }) {
+function Dashboard({ pacs, addToast, onSelectPac }) {
   const allT = pacs.flatMap(p => (p.turnos || []).map(t => ({ ...t, pac: p })));
   const prox = allT.filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora)).slice(0,6);
   const hoyT = allT.filter(t => t.fecha === HOY).length;
@@ -709,7 +709,7 @@ function Dashboard({ pacs, addToast }) {
             <thead><tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Estado</th></tr></thead>
             <tbody>
               {prox.map(t => (
-                <tr key={t.id}>
+                <tr key={t.id} style={{ cursor:"pointer" }} onClick={() => { onSelectPac(t.pac.id); }}>
                   <td><div className="pac-cell"><div className="pac-av" style={{ background: t.pac.color }}>{t.pac.av}</div><div><div style={{ fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{t.pac.dx}</div></div></div></td>
                   <td><span style={{ color: t.fecha === HOY ? "var(--accent)" : "inherit", fontWeight: t.fecha === HOY ? 600 : 400 }}>{t.fecha === HOY ? "Hoy" : fmtD(t.fecha)}</span></td>
                   <td style={{ fontWeight:600 }}>{t.hora}</td>
@@ -1054,6 +1054,7 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
 // ─── CALENDAR ────────────────────────────────────────────────
 function CalendarPage({ pacs, addToast, onNew }) {
   const now = new Date();
+  const [calView, setCalView] = useState("mes"); // dia | semana | mes | año
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selD, setSelD] = useState(now.getDate());
@@ -1067,57 +1068,188 @@ function CalendarPage({ pacs, addToast, onNew }) {
   const prMo = () => { if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1); setSelD(1); };
   const nxMo = () => { if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1); setSelD(1); };
 
+  // Week view helpers
+  const getWeekDays = () => {
+    const d = new Date(year, month, selD);
+    const day = d.getDay(); // 0=sun
+    const monday = new Date(d); monday.setDate(d.getDate() - (day===0?6:day-1));
+    return Array.from({length:7}, (_,i) => { const x = new Date(monday); x.setDate(monday.getDate()+i); return x; });
+  };
+  const toStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const HORAS = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"];
+
+  // Day view
+  const renderDia = () => (
+    <div className="card" style={{ padding:24 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+        <div style={{ fontSize:18, fontWeight:700 }}>{selD} de {MESES_L[month]}, {year}</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button className="btn btn-secondary btn-icon" onClick={() => { const d=new Date(year,month,selD-1); setYear(d.getFullYear()); setMonth(d.getMonth()); setSelD(d.getDate()); }}><Ico n="back" s={14}/></button>
+          <button className="btn btn-secondary btn-icon" onClick={() => { const d=new Date(year,month,selD+1); setYear(d.getFullYear()); setMonth(d.getMonth()); setSelD(d.getDate()); }}><Ico n="fwd" s={14}/></button>
+        </div>
+      </div>
+      {HORAS.map(h => {
+        const slots = dayT.filter(t => t.hora.startsWith(h.slice(0,2)));
+        return (
+          <div key={h} style={{ display:"flex", gap:12, padding:"8px 0", borderBottom:"1px solid #F0F1F3", minHeight:44 }}>
+            <div style={{ width:48, fontSize:12, color:"#9CA3AF", fontWeight:600, flexShrink:0, paddingTop:2 }}>{h}</div>
+            <div style={{ flex:1 }}>
+              {slots.map(t => (
+                <div key={t.id} style={{ background:t.pac.color+"22", border:`1px solid ${t.pac.color}44`, borderLeft:`3px solid ${t.pac.color}`, borderRadius:6, padding:"4px 10px", marginBottom:4 }}>
+                  <div style={{ fontWeight:600, fontSize:13 }}>{t.pac.nombre} {t.pac.apellido}</div>
+                  <div style={{ fontSize:11, color:"#6B7280" }}>{t.motivo}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Week view
+  const renderSemana = () => {
+    const days = getWeekDays();
+    return (
+      <div className="card" style={{ padding:24 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+          <div style={{ fontSize:18, fontWeight:700 }}>Semana del {days[0].getDate()} al {days[6].getDate()} de {MESES_L[days[6].getMonth()]}</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button className="btn btn-secondary btn-icon" onClick={() => { const d=new Date(year,month,selD-7); setYear(d.getFullYear()); setMonth(d.getMonth()); setSelD(d.getDate()); }}><Ico n="back" s={14}/></button>
+            <button className="btn btn-secondary btn-icon" onClick={() => { const d=new Date(year,month,selD+7); setYear(d.getFullYear()); setMonth(d.getMonth()); setSelD(d.getDate()); }}><Ico n="fwd" s={14}/></button>
+          </div>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:`48px repeat(7,1fr)`, gap:4 }}>
+          <div/>
+          {days.map((d,i) => {
+            const isToday = toStr(d)===HOY;
+            return <div key={i} style={{ textAlign:"center", padding:"6px 2px", fontSize:12, fontWeight:600, color: isToday?"var(--accent)":"#6B7280", background: isToday?"var(--accent-bg)":"transparent", borderRadius:6 }}>{["Lu","Ma","Mi","Ju","Vi","Sá","Do"][i]}<br/><span style={{ fontSize:16, fontWeight:700 }}>{d.getDate()}</span></div>;
+          })}
+          {HORAS.map(h => [
+            <div key={h+"l"} style={{ fontSize:11, color:"#9CA3AF", textAlign:"right", paddingRight:8, paddingTop:6 }}>{h}</div>,
+            ...days.map((d,i) => {
+              const ds = toStr(d);
+              const slots = allT.filter(t => t.fecha===ds && t.hora.startsWith(h.slice(0,2)));
+              return (
+                <div key={h+i} style={{ borderTop:"1px solid #F0F1F3", minHeight:40, padding:2 }}>
+                  {slots.map(t => (
+                    <div key={t.id} style={{ background:t.pac.color, borderRadius:4, padding:"2px 6px", marginBottom:2 }}>
+                      <div style={{ fontSize:11, fontWeight:600, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.pac.nombre}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+          ])}
+        </div>
+      </div>
+    );
+  };
+
+  // Year view
+  const renderAnio = () => (
+    <div className="card" style={{ padding:24 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+        <div style={{ fontSize:18, fontWeight:700 }}>{year}</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button className="btn btn-secondary btn-icon" onClick={() => setYear(y=>y-1)}><Ico n="back" s={14}/></button>
+          <button className="btn btn-secondary btn-icon" onClick={() => setYear(y=>y+1)}><Ico n="fwd" s={14}/></button>
+        </div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
+        {Array.from({length:12},(_,mi) => {
+          const daysInM = new Date(year,mi+1,0).getDate();
+          const firstWD = new Date(year,mi,1).getDay();
+          const turnsCnt = allT.filter(t => { const d=new Date(t.fecha); return d.getFullYear()===year&&d.getMonth()===mi; }).length;
+          return (
+            <div key={mi} style={{ border:"1px solid var(--border)", borderRadius:8, padding:12, cursor:"pointer", background: month===mi?"var(--accent-bg)":"transparent" }}
+              onClick={() => { setMonth(mi); setCalView("mes"); }}>
+              <div style={{ fontSize:13, fontWeight:700, marginBottom:8, color: month===mi?"var(--accent)":"var(--text)" }}>{MESES_L[mi]}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:1 }}>
+                {Array.from({length:firstWD}).map((_,i)=><div key={"e"+i}/>)}
+                {Array.from({length:daysInM},(_,i)=>{
+                  const ds=`${year}-${String(mi+1).padStart(2,"0")}-${String(i+2).padStart(2,"0")}`;
+                  const has=allT.some(t=>t.fecha===ds);
+                  return <div key={i} style={{ width:8,height:8,borderRadius:2,background:has?"var(--accent)":"#F3F4F6",margin:"1px auto" }}/>;
+                })}
+              </div>
+              {turnsCnt>0&&<div style={{ fontSize:11, color:"var(--accent)", fontWeight:600, marginTop:6 }}>{turnsCnt} turno{turnsCnt!==1?"s":""}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div className="page-header">
         <div><div className="page-title">Agenda</div><div className="page-sub">Gestión de turnos</div></div>
-        <button className="btn btn-primary" onClick={onNew}><Ico n="plus" s={15}/>Nuevo Turno</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <div style={{ display:"flex", background:"var(--bg)", borderRadius:8, padding:3, gap:2 }}>
+            {[{k:"dia",l:"Día"},{k:"semana",l:"Semana"},{k:"mes",l:"Mes"},{k:"año",l:"Año"}].map(v => (
+              <button key={v.k} onClick={() => setCalView(v.k)}
+                style={{ padding:"5px 12px", borderRadius:6, border:"none", fontSize:12, fontWeight:600, cursor:"pointer",
+                  background: calView===v.k ? "var(--surface)" : "transparent",
+                  color: calView===v.k ? "var(--accent)" : "var(--text2)",
+                  boxShadow: calView===v.k ? "var(--shadow-sm)" : "none" }}>
+                {v.l}
+              </button>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={onNew}><Ico n="plus" s={15}/>Nuevo Turno</button>
+        </div>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:20, alignItems:"start" }}>
-        <div className="card" style={{ padding:24 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-            <div style={{ fontSize:18, fontWeight:700 }}>{MESES_L[month]} {year}</div>
-            <div style={{ display:"flex", gap:8 }}>
-              <button className="btn btn-secondary btn-icon" onClick={prMo}><Ico n="back" s={14}/></button>
-              <button className="btn btn-secondary btn-icon" onClick={nxMo}><Ico n="fwd" s={14}/></button>
+      {calView === "dia" && renderDia()}
+      {calView === "semana" && renderSemana()}
+      {calView === "año" && renderAnio()}
+      {calView === "mes" && (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:20, alignItems:"start" }}>
+          <div className="card" style={{ padding:24 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontSize:18, fontWeight:700 }}>{MESES_L[month]} {year}</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button className="btn btn-secondary btn-icon" onClick={prMo}><Ico n="back" s={14}/></button>
+                <button className="btn btn-secondary btn-icon" onClick={nxMo}><Ico n="fwd" s={14}/></button>
+              </div>
+            </div>
+            <div className="cal-grid" style={{ marginBottom:6 }}>
+              {DIAS.map((d,i) => <div key={i} className="cal-dh">{d}</div>)}
+            </div>
+            <div className="cal-grid">
+              {Array.from({length:fWD}).map((_,i) => <div key={"e"+i} className="cal-day cal-off"/>)}
+              {Array.from({length:dIM}).map((_,i) => {
+                const day = i+1;
+                const isT = day===now.getDate() && month===now.getMonth() && year===now.getFullYear();
+                const isSel = day===selD && !isT;
+                const hasE = hasDays.has(day);
+                return <div key={day} className={`cal-day${isT?" cal-today":""}${isSel?" cal-sel":""}${hasE?" cal-has":""}`} onClick={() => setSelD(day)}>{day}</div>;
+              })}
             </div>
           </div>
-          <div className="cal-grid" style={{ marginBottom:6 }}>
-            {DIAS.map((d,i) => <div key={i} className="cal-dh">{d}</div>)}
-          </div>
-          <div className="cal-grid">
-            {Array.from({length:fWD}).map((_,i) => <div key={"e"+i} className="cal-day cal-off"/>)}
-            {Array.from({length:dIM}).map((_,i) => {
-              const day = i+1;
-              const isT = day===now.getDate() && month===now.getMonth() && year===now.getFullYear();
-              const isSel = day===selD && !isT;
-              const hasE = hasDays.has(day);
-              return <div key={day} className={`cal-day${isT?" cal-today":""}${isSel?" cal-sel":""}${hasE?" cal-has":""}`} onClick={() => setSelD(day)}>{day}</div>;
-            })}
-          </div>
-        </div>
 
-        <div className="card" style={{ padding:18 }}>
-          <div style={{ fontSize:15, fontWeight:600, marginBottom:14, paddingBottom:12, borderBottom:"1px solid #F0F1F3" }}>
-            {selD} de {MESES_L[month]}
-          </div>
-          {dayT.length === 0
-            ? <div className="empty" style={{ padding:"24px 0" }}><div className="empty-icon">📅</div><div className="empty-text">Sin turnos</div></div>
-            : dayT.map((t,i) => (
-                <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom: i < dayT.length-1 ? "1px solid #F0F1F3" : "none" }}>
-                  <div style={{ width:4, height:36, background:t.pac.color, borderRadius:2, flexShrink:0 }}/>
-                  <div style={{ fontSize:13, fontWeight:700, color:"var(--accent)", minWidth:40 }}>{t.hora}</div>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div>
-                    <div style={{ fontSize:11, color:"#9CA3AF" }}>{t.motivo}</div>
+          <div className="card" style={{ padding:18 }}>
+            <div style={{ fontSize:15, fontWeight:600, marginBottom:14, paddingBottom:12, borderBottom:"1px solid #F0F1F3" }}>
+              {selD} de {MESES_L[month]}
+            </div>
+            {dayT.length === 0
+              ? <div className="empty" style={{ padding:"24px 0" }}><div className="empty-icon">📅</div><div className="empty-text">Sin turnos</div></div>
+              : dayT.map((t,i) => (
+                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom: i < dayT.length-1 ? "1px solid #F0F1F3" : "none" }}>
+                    <div style={{ width:4, height:36, background:t.pac.color, borderRadius:2, flexShrink:0 }}/>
+                    <div style={{ fontSize:13, fontWeight:700, color:"var(--accent)", minWidth:40 }}>{t.hora}</div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div>
+                      <div style={{ fontSize:11, color:"#9CA3AF" }}>{t.motivo}</div>
+                    </div>
                   </div>
-                </div>
-              ))
-          }
-          <button className="btn btn-primary" style={{ width:"100%", justifyContent:"center", marginTop:14 }} onClick={onNew}><Ico n="plus" s={14}/>Agendar turno</button>
+                ))
+            }
+            <button className="btn btn-primary" style={{ width:"100%", justifyContent:"center", marginTop:14 }} onClick={onNew}><Ico n="plus" s={14}/>Agendar turno</button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card" style={{ marginTop:20 }}>
         <div className="card-header"><div className="card-title">Todos los turnos próximos</div></div>
@@ -1713,7 +1845,7 @@ function ModalEditPaciente({ pac, onClose, onSave }) {
 }
 
 function ModalPaciente({ onClose, onSave }) {
-  const [f, setF] = useState({ nombre:"", ap:"", dni:"", tel:"", email:"", dob:"", dx:"", meds:"", notas:"", tipo:"recurrente" });
+  const [f, setF] = useState({ nombre:"", ap:"", dni:"", tel:"", email:"", dob:"", dx:"", meds:"", notas:"", tipo:"nuevo" });
   const [busy, setBusy] = useState(false);
   const set = (k,v) => setF(p => ({...p,[k]:v}));
   const save = async () => { if(!f.nombre)return; setBusy(true); await new Promise(r=>setTimeout(r,500)); onSave(f); setBusy(false); };
@@ -1727,16 +1859,6 @@ function ModalPaciente({ onClose, onSave }) {
           <div className="form-row"><div className="form-group"><label className="form-label">Teléfono</label><input className="form-input" placeholder="+54 11..." value={f.tel} onChange={e=>set("tel",e.target.value)}/></div><div className="form-group"><label className="form-label">Email</label><input className="form-input" placeholder="correo@..." value={f.email} onChange={e=>set("email",e.target.value)}/></div></div>
           <div className="form-group"><label className="form-label">Diagnóstico</label><input className="form-input" placeholder="Hipertensión arterial..." value={f.dx} onChange={e=>set("dx",e.target.value)}/></div>
           <div className="form-group"><label className="form-label">Medicación actual</label><input className="form-input" placeholder="Enalapril 10mg..." value={f.meds} onChange={e=>set("meds",e.target.value)}/></div>
-          <div className="form-group">
-            <label className="form-label">Tipo de paciente</label>
-            <div style={{ display:"flex", gap:8 }}>
-              {["recurrente","nuevo"].map(t => (
-                <button key={t} onClick={() => set("tipo",t)} className={`filter-chip ${f.tipo===t?"active":""}`} style={{ flex:1, justifyContent:"center" }}>
-                  {t.charAt(0).toUpperCase()+t.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
         <div className="modal-footer"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy} onClick={save}>{busy&&<div className="spinner"/>}Guardar Paciente</button></div>
       </div>
@@ -1844,7 +1966,7 @@ function App() {
 
   const NAV = [
     { id:"dashboard", ico:"home",     lbl:"Inicio" },
-    { id:"patients",  ico:"users",    lbl:"Pacientes", badge: pacs.filter(p=>p.tipo==="nuevo").length },
+    { id:"patients",  ico:"users",    lbl:"Pacientes" },
     { id:"calendar",  ico:"cal",      lbl:"Agenda",    badge: pacs.flatMap(p=>p.turnos||[]).filter(t=>t.fecha===HOY).length || 0 },
     { id:"analytics", ico:"chart",    lbl:"Métricas" },
     { id:"settings",  ico:"settings", lbl:"Ajustes" },
@@ -1913,7 +2035,7 @@ function App() {
         </div>
 
         <div className="content">
-          {tab==="dashboard" && !view && <Dashboard pacs={pacs} addToast={addToast}/>}
+          {tab==="dashboard" && !view && <Dashboard pacs={pacs} addToast={addToast} onSelectPac={id => { setTab("patients"); setView({type:"detail",id}); }}/>}
           {tab==="patients"  && !view && <Patients pacs={pacs} onSelect={id=>setView({type:"detail",id})} onNew={()=>setModal("paciente")}/>}
           {tab==="patients"  && view?.type==="detail" && selPac && <PatientDetail pac={selPac} onBack={()=>setView(null)} addToast={addToast} syncPacs={syncPacs} onNewTurno={()=>setModal("turno-from-patient")}/>}
           {tab==="calendar"  && <CalendarPage pacs={pacs} addToast={addToast} onNew={()=>setModal("turno")}/>}
