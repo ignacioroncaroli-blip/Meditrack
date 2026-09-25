@@ -1776,7 +1776,7 @@ function App() {
     const color = getColor(f.nombre + (f.ap||""));
     const { data, error } = await sbClient.from("pacientes").insert([{
       medico_id: medicoId,
-      nombre: f.nombre, apellido: f.ap||"", dob: f.dob||null, fecha_nac: f.dob||null,
+      nombre: f.nombre, apellido: f.ap||"", fecha_nac: f.dob||null,
       dni: f.dni||null, tel: f.tel||null, email: f.email||null,
       tipo: f.tipo||"nuevo", dx: f.dx||null, meds: f.meds||null, notas: f.notas||null,
       color, av,
