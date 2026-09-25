@@ -779,6 +779,7 @@ function Auth({ onLogin }) {
 
 // ─── DASHBOARD ───────────────────────────────────────────────
 function Dashboard({ pacs, addToast, onSelectPac }) {
+  const [selTurno, setSelTurno] = useState(null);
   const allT = pacs.flatMap(p => (p.turnos || []).map(t => ({ ...t, pac: p })));
   const prox = allT.filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora)).slice(0,6);
   const hoyT = allT.filter(t => t.fecha === HOY).length;
@@ -816,7 +817,7 @@ function Dashboard({ pacs, addToast, onSelectPac }) {
             <thead><tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Estado</th></tr></thead>
             <tbody>
               {prox.map(t => (
-                <tr key={t.id} style={{ cursor:"pointer" }} onClick={() => { onSelectPac(t.pac.id); }}>
+                <tr key={t.id} style={{ cursor:"pointer" }} onClick={() => setSelTurno(t)}>
                   <td><div className="pac-cell"><div className="pac-av" style={{ background: t.pac.color }}>{t.pac.av}</div><div><div style={{ fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div><div style={{ fontSize:11, color:"#9CA3AF" }}>{t.pac.dx}</div></div></div></td>
                   <td><span style={{ color: t.fecha === HOY ? "var(--accent)" : "inherit", fontWeight: t.fecha === HOY ? 600 : 400 }}>{t.fecha === HOY ? "Hoy" : fmtD(t.fecha)}</span></td>
                   <td style={{ fontWeight:600 }}>{t.hora}</td>
@@ -887,6 +888,8 @@ function Dashboard({ pacs, addToast, onSelectPac }) {
           </tbody>
         </table>
       </div>
+
+      {selTurno && <ModalTurnoDetalle turno={selTurno} onClose={() => setSelTurno(null)}/>}
     </div>
   );
 }
@@ -1244,12 +1247,88 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
 }
 
 // ─── CALENDAR ────────────────────────────────────────────────
+function ModalTurnoDetalle({ turno, onClose }) {
+  const t = turno;
+  const estadoStyle = {
+    programado: { bg:"#DCFCE7", color:"#16A34A" },
+    completado: { bg:"#DBEAFE", color:"#1D4ED8" },
+    realizado:  { bg:"#DBEAFE", color:"#1D4ED8" },
+    cancelado:  { bg:"#FEE2E2", color:"#DC2626" },
+    ausente:    { bg:"#FEF3C7", color:"#D97706" },
+  }[t.estado] || { bg:"#F3F4F6", color:"#6B7280" };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth:480 }}>
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">{t.motivo || "Turno"}</div>
+            <div style={{ fontSize:12, color:"#9CA3AF", marginTop:2 }}>{fmtD(t.fecha)} · {t.hora} hs</div>
+          </div>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><Ico n="x" s={16}/></button>
+        </div>
+        <div className="modal-body">
+
+          {/* Paciente */}
+          <div style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", background:"var(--bg)", borderRadius:10, marginBottom:16 }}>
+            <div style={{ width:46, height:46, borderRadius:"50%", background:t.pac.color, display:"grid", placeItems:"center", fontSize:16, fontWeight:700, color:"#fff", flexShrink:0 }}>
+              {t.pac.av}
+            </div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700 }}>{t.pac.nombre} {t.pac.apellido}</div>
+              <div style={{ fontSize:12, color:"#6B7280", marginTop:2 }}>
+                {t.pac.edad ? `${t.pac.edad} años` : ""}
+                {t.pac.edad && t.pac.dni ? " · " : ""}
+                {t.pac.dni ? `DNI ${t.pac.dni}` : ""}
+              </div>
+              {t.pac.tel && <div style={{ fontSize:12, color:"var(--accent)", marginTop:2 }}>📞 {t.pac.tel}</div>}
+            </div>
+          </div>
+
+          {/* Detalles del turno */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+            <div style={{ background:"var(--bg)", borderRadius:8, padding:"10px 14px" }}>
+              <div style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", marginBottom:4 }}>Fecha</div>
+              <div style={{ fontSize:14, fontWeight:600 }}>{fmtD(t.fecha)}</div>
+            </div>
+            <div style={{ background:"var(--bg)", borderRadius:8, padding:"10px 14px" }}>
+              <div style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", marginBottom:4 }}>Hora</div>
+              <div style={{ fontSize:14, fontWeight:600 }}>{t.hora} hs</div>
+            </div>
+            <div style={{ background:"var(--bg)", borderRadius:8, padding:"10px 14px" }}>
+              <div style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", marginBottom:4 }}>Motivo</div>
+              <div style={{ fontSize:14, fontWeight:600 }}>{t.motivo || "—"}</div>
+            </div>
+            <div style={{ background:"var(--bg)", borderRadius:8, padding:"10px 14px" }}>
+              <div style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", marginBottom:4 }}>Estado</div>
+              <span style={{ display:"inline-block", background:estadoStyle.bg, color:estadoStyle.color, fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:20 }}>{t.estado}</span>
+            </div>
+          </div>
+
+          {/* Diagnóstico del paciente */}
+          {t.pac.dx && (
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".5px", marginBottom:5 }}>Diagnóstico del paciente</div>
+              <div style={{ fontSize:14, color:"var(--text)" }}>{t.pac.dx}</div>
+            </div>
+          )}
+
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CalendarPage({ pacs, addToast, onNew }) {
   const now = new Date();
   const [calView, setCalView] = useState("mes"); // dia | semana | mes | año
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selD, setSelD] = useState(now.getDate());
+  const [selTurno, setSelTurno] = useState(null);
 
   const dIM = new Date(year, month+1, 0).getDate();
   const fWD = new Date(year, month, 1).getDay();
@@ -1449,7 +1528,7 @@ function CalendarPage({ pacs, addToast, onNew }) {
           <thead><tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Estado</th><th>Diagnóstico</th></tr></thead>
           <tbody>
             {allT.filter(t => t.fecha >= HOY).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora)).map(t => (
-              <tr key={t.id}>
+              <tr key={t.id} style={{ cursor:"pointer" }} onClick={() => setSelTurno(t)}>
                 <td><div className="pac-cell"><div className="pac-av" style={{ background: t.pac.color }}>{t.pac.av}</div><div style={{ fontWeight:500 }}>{t.pac.nombre} {t.pac.apellido}</div></div></td>
                 <td style={{ color: t.fecha===HOY ? "var(--accent)" : "inherit", fontWeight: t.fecha===HOY ? 600 : 400 }}>{t.fecha===HOY ? "Hoy" : fmtD(t.fecha)}</td>
                 <td style={{ fontWeight:600 }}>{t.hora}</td>
@@ -1461,6 +1540,8 @@ function CalendarPage({ pacs, addToast, onNew }) {
           </tbody>
         </table>
       </div>
+
+      {selTurno && <ModalTurnoDetalle turno={selTurno} onClose={() => setSelTurno(null)}/>}
     </div>
   );
 }
