@@ -843,6 +843,7 @@ function Patients({ pacs, onSelect, onNew }) {
 function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
   const [tab, setTab] = useState("hc");
   const [showConsulta, setShowConsulta] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [recOpen, setRecOpen] = useState(false);
   const [recs, setRecs] = useState([...(DB.recs[pac.turnos?.[0]?.id] || [])]);
   const [uploading, setUploading] = useState(false);
@@ -912,6 +913,7 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
               <button className="btn btn-primary" onClick={() => setShowConsulta(true)} style={{ flex:1, justifyContent:"center" }}><Ico n="plus" s={14}/>Consulta</button>
               <button className="btn btn-secondary" onClick={onNewTurno} style={{ flex:1, justifyContent:"center" }}><Ico n="cal" s={14}/>Turno</button>
             </div>
+            <button className="btn btn-ghost" onClick={() => setShowEdit(true)} style={{ width:"100%", justifyContent:"center", marginTop:8, fontSize:12 }}><Ico n="edit" s={13}/>Editar datos del paciente</button>
           </div>
 
           <div className="detail-panel" style={{ marginBottom:16 }}>
@@ -1036,6 +1038,15 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
       </div>
 
       {showConsulta && <ConsultaPage pac={pac} onClose={() => setShowConsulta(false)} onSave={saveConsulta}/>}
+      {showEdit && <ModalEditPaciente pac={pac} onClose={() => setShowEdit(false)} onSave={async f => {
+        const { error } = await sbClient.from("pacientes").update({
+          nombre: f.nombre, apellido: f.ap, fecha_nac: f.dob||null,
+          dni: f.dni||null, tel: f.tel||null, email: f.email||null,
+          tipo: f.tipo, dx: f.dx||null, meds: f.meds||null, notas: f.notas||null,
+        }).eq("id", pac.id);
+        if (error) { addToast("Error al actualizar"); console.error(error); return; }
+        await syncPacs(); addToast("Paciente actualizado"); setShowEdit(false);
+      }} addToast={addToast}/>}
     </div>
   );
 }
@@ -1673,6 +1684,34 @@ function ConsultaPage({ pac, onClose, onSave }) {
 }
 
 // ─── MODALS ─────────────────────────────────────────────────
+function ModalEditPaciente({ pac, onClose, onSave }) {
+  const [f, setF] = useState({ nombre:pac.nombre||"", ap:pac.apellido||"", dni:pac.dni||"", tel:pac.tel||"", email:pac.email||"", dob:pac.fecha_nac||"", dx:pac.dx||"", meds:pac.meds||"", notas:pac.notas||"", tipo:pac.tipo||"recurrente" });
+  const [busy, setBusy] = useState(false);
+  const set = (k,v) => setF(p => ({...p,[k]:v}));
+  const save = async () => { if(!f.nombre)return; setBusy(true); await onSave(f); setBusy(false); };
+  return (
+    <div className="modal-overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header"><div className="modal-title">Editar Paciente</div><button className="btn btn-ghost btn-icon" onClick={onClose}><Ico n="x" s={16}/></button></div>
+        <div className="modal-body">
+          <div className="form-row"><div className="form-group"><label className="form-label">Nombre *</label><input className="form-input" value={f.nombre} onChange={e=>set("nombre",e.target.value)}/></div><div className="form-group"><label className="form-label">Apellido</label><input className="form-input" value={f.ap} onChange={e=>set("ap",e.target.value)}/></div></div>
+          <div className="form-row"><div className="form-group"><label className="form-label">DNI</label><input className="form-input" value={f.dni} onChange={e=>set("dni",e.target.value)}/></div><div className="form-group"><label className="form-label">Fecha de nacimiento</label><input className="form-input" type="date" value={f.dob} onChange={e=>set("dob",e.target.value)}/></div></div>
+          <div className="form-row"><div className="form-group"><label className="form-label">Teléfono</label><input className="form-input" value={f.tel} onChange={e=>set("tel",e.target.value)}/></div><div className="form-group"><label className="form-label">Email</label><input className="form-input" value={f.email} onChange={e=>set("email",e.target.value)}/></div></div>
+          <div className="form-group"><label className="form-label">Diagnóstico</label><input className="form-input" value={f.dx} onChange={e=>set("dx",e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">Medicación actual</label><input className="form-input" value={f.meds} onChange={e=>set("meds",e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">Notas</label><textarea className="form-input" rows={2} value={f.notas} onChange={e=>set("notas",e.target.value)}/></div>
+          <div className="form-group"><label className="form-label">Tipo de paciente</label>
+            <div style={{ display:"flex", gap:8 }}>
+              {["recurrente","nuevo"].map(t => <button key={t} className={`btn ${f.tipo===t?"btn-primary":"btn-secondary"}`} style={{ flex:1, justifyContent:"center", textTransform:"capitalize" }} onClick={()=>set("tipo",t)}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy||!f.nombre} onClick={save}>{busy&&<div className="spinner"/>}Guardar cambios</button></div>
+      </div>
+    </div>
+  );
+}
+
 function ModalPaciente({ onClose, onSave }) {
   const [f, setF] = useState({ nombre:"", ap:"", dni:"", tel:"", email:"", dob:"", dx:"", meds:"", notas:"", tipo:"recurrente" });
   const [busy, setBusy] = useState(false);
