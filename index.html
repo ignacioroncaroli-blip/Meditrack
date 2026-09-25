@@ -598,12 +598,18 @@ function Auth({ onLogin }) {
         if (error) { setErr(error.message === "Invalid login credentials" ? "Email o contraseña incorrectos." : error.message); setBusy(false); return; }
         // Traer perfil del médico
         const { data: perfil } = await sbClient.from("medicos").select("*").eq("id", data.user.id).single();
-        DB.medico = perfil || { nombre: "Dr.", apellido: "", email, especialidad: "", plan: "basic" };
+        DB.medico = perfil
+          ? { ...perfil, id: data.user.id }
+          : { id: data.user.id, nombre: "Dr.", apellido: "", email, especialidad: "", plan: "basic" };
       } else {
         if (!nom) { setErr("Ingresá tu nombre."); setBusy(false); return; }
         const { data, error } = await sbClient.auth.signUp({ email, password: pw, options: { data: { nombre: nom, apellido: ap, especialidad: esp } } });
         if (error) { setErr(error.message); setBusy(false); return; }
-        DB.medico = { nombre: nom, apellido: ap, email, especialidad: esp, plan: "basic" };
+        // Crear perfil en tabla medicos
+        if (data.user) {
+          await sbClient.from("medicos").upsert([{ id: data.user.id, nombre: nom, apellido: ap, email, especialidad: esp, plan: "basic" }]);
+        }
+        DB.medico = { id: data.user?.id, nombre: nom, apellido: ap, email, especialidad: esp, plan: "basic" };
       }
       setBusy(false); onLogin();
     } catch(e) { setErr("Error: " + (e?.message || JSON.stringify(e))); setBusy(false); }
@@ -863,11 +869,29 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
     addToast("Archivo subido correctamente");
   };
 
-  const saveConsulta = f => {
-    const sis = parseInt(f.presion_sis)||null, dia = parseInt(f.presion_dia)||null;
-    const c = { id:"c"+Date.now(), fecha:f.fecha||HOY, motivo:f.motivo, sis, dia, fc:parseFloat(f.fc)||null, temp:parseFloat(f.temp)||null, spo2:parseFloat(f.spo2)||null, peso:parseFloat(f.peso)||null, talla:parseFloat(f.talla)||null, dx_consulta:f.dx_consulta||null, indicaciones:f.indicaciones||null, estudios:f.estudios||null, meds_consulta:f.meds_consulta||null, receta:f.receta||false, proxima_fecha:f.proxima_fecha||null, notas:f.notas||null };
-    if (!pac.hc) pac.hc = [];
-    pac.hc.unshift(c); syncPacs();
+  const saveConsulta = async f => {
+    const medicoId = DB.medico?.id;
+    const { error } = await sbClient.from("hc").insert([{
+      medico_id: medicoId,
+      paciente_id: pac.id,
+      fecha: f.fecha||HOY,
+      motivo: f.motivo||null,
+      evolucion: f.notas||null,
+      diagnostico: f.dx_consulta||null,
+      indicaciones: f.indicaciones||null,
+      archivos: [],
+      // signos vitales y extra en un campo jsonb "evolucion" extendido:
+      extra: JSON.stringify({
+        sis: parseInt(f.presion_sis)||null, dia: parseInt(f.presion_dia)||null,
+        fc: parseFloat(f.fc)||null, temp: parseFloat(f.temp)||null,
+        spo2: parseFloat(f.spo2)||null, peso: parseFloat(f.peso)||null,
+        talla: parseFloat(f.talla)||null, estudios: f.estudios||null,
+        meds_consulta: f.meds_consulta||null, receta: f.receta||false,
+        proxima_fecha: f.proxima_fecha||null,
+      }),
+    }]);
+    if (error) { addToast("Error al guardar consulta"); console.error(error); return; }
+    await syncPacs();
     addToast("Consulta registrada en historia clínica");
     setShowConsulta(false);
   };
@@ -956,25 +980,29 @@ function PatientDetail({ pac, onBack, addToast, syncPacs, onNewTurno }) {
               {(!pac.hc || pac.hc.length === 0) && (
                 <div className="empty"><div className="empty-icon">🩺</div><div className="empty-text">Sin consultas registradas</div><div className="empty-sub">Agrega la primera consulta</div></div>
               )}
-              {(pac.hc||[]).map(c => (
+              {(pac.hc||[]).map(c => {
+                const ex = (() => { try { return typeof c.extra === "string" ? JSON.parse(c.extra) : (c.extra||{}); } catch(e){ return {}; } })();
+                return (
                 <div key={c.id} className="hci">
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <div style={{ fontSize:14, fontWeight:600 }}>{c.motivo}</div>
                     <div style={{ fontSize:12, color:"#9CA3AF" }}>{fmtD(c.fecha)}</div>
                   </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom: c.notas ? 8 : 0 }}>
-                    {c.sis && c.dia && <span className="vpill" style={{ background:"#FEE2E2", color:"#DC2626" }}>PA {c.sis}/{c.dia}</span>}
-                    {c.fc   && <span className="vpill" style={{ background:"#FEF3C7", color:"#D97706" }}>FC {c.fc}</span>}
-                    {c.temp && <span className="vpill" style={{ background:"#F3F4F6", color:"#6B7280" }}>T° {c.temp}°C</span>}
-                    {c.spo2 && <span className="vpill" style={{ background:"#DBEAFE", color:"#1D4ED8" }}>O₂ {c.spo2}%</span>}
-                    {c.peso && <span className="vpill" style={{ background:"#DCFCE7", color:"#16A34A" }}>⚖ {c.peso}kg</span>}
-                    {c.receta && <span className="vpill" style={{ background:"#EEF2FF", color:"var(--accent)" }}>Receta</span>}
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom: (c.evolucion||c.diagnostico) ? 8 : 0 }}>
+                    {ex.sis && ex.dia && <span className="vpill" style={{ background:"#FEE2E2", color:"#DC2626" }}>PA {ex.sis}/{ex.dia}</span>}
+                    {ex.fc   && <span className="vpill" style={{ background:"#FEF3C7", color:"#D97706" }}>FC {ex.fc}</span>}
+                    {ex.temp && <span className="vpill" style={{ background:"#F3F4F6", color:"#6B7280" }}>T° {ex.temp}°C</span>}
+                    {ex.spo2 && <span className="vpill" style={{ background:"#DBEAFE", color:"#1D4ED8" }}>O₂ {ex.spo2}%</span>}
+                    {ex.peso && <span className="vpill" style={{ background:"#DCFCE7", color:"#16A34A" }}>⚖ {ex.peso}kg</span>}
+                    {ex.receta && <span className="vpill" style={{ background:"#EEF2FF", color:"var(--accent)" }}>Receta</span>}
                   </div>
-                  {c.dx_consulta && <div style={{ fontSize:12, color:"#374151", marginBottom:3 }}><strong>Dx:</strong> {c.dx_consulta}</div>}
-                  {c.notas && <div style={{ fontSize:12, color:"#6B7280", fontStyle:"italic" }}>"{c.notas}"</div>}
-                  {c.proxima_fecha && <div style={{ marginTop:8, background:"#FEF3C7", borderRadius:6, padding:"5px 10px", fontSize:12, color:"var(--amber)", fontWeight:500 }}>Próxima cita: {fmtD(c.proxima_fecha)}</div>}
+                  {c.diagnostico && <div style={{ fontSize:12, color:"#374151", marginBottom:3 }}><strong>Dx:</strong> {c.diagnostico}</div>}
+                  {c.evolucion && <div style={{ fontSize:12, color:"#6B7280", fontStyle:"italic" }}>"{c.evolucion}"</div>}
+                  {c.indicaciones && <div style={{ fontSize:12, color:"#374151", marginTop:3 }}><strong>Indicaciones:</strong> {c.indicaciones}</div>}
+                  {ex.proxima_fecha && <div style={{ marginTop:8, background:"#FEF3C7", borderRadius:6, padding:"5px 10px", fontSize:12, color:"var(--amber)", fontWeight:500 }}>Próxima cita: {fmtD(ex.proxima_fecha)}</div>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -1283,7 +1311,11 @@ function Settings({ medico, addToast, onMedicoUpdate }) {
             <div className="settings-section">
               <div className="settings-section-header">
                 <div><div className="settings-section-title">Perfil del médico</div><div className="settings-section-sub">Tu información personal y profesional</div></div>
-                <button className="btn btn-primary btn-sm" onClick={() => { DB.medico = { ...DB.medico, ...perfil }; onMedicoUpdate({ ...DB.medico }); addToast("Perfil actualizado"); }}><Ico n="check" s={13}/>Guardar</button>
+                <button className="btn btn-primary btn-sm" onClick={async () => {
+                  const updated = { ...DB.medico, ...perfil };
+                  await sbClient.from("medicos").upsert([{ id: DB.medico.id, nombre: perfil.nombre, apellido: perfil.apellido, especialidad: perfil.especialidad, email: perfil.email }]);
+                  DB.medico = updated; onMedicoUpdate({ ...updated }); addToast("Perfil actualizado");
+                }}><Ico n="check" s={13}/>Guardar</button>
               </div>
               <div className="settings-body">
                 <div className="form-row">
@@ -1708,27 +1740,61 @@ function App() {
 
   const removeToast = id => setToasts(t => t.filter(x => x.id !== id));
 
-  const syncPacs = useCallback(() => {
-    setPacs(DB.pacientes.map(p => ({ ...p, av: getAv(p.nombre,p.apellido), color: getColor(p.id), edad: calcEdad(p.dob) })));
+  const loadPacs = useCallback(async () => {
+    const medicoId = DB.medico?.id;
+    if (!medicoId) return;
+    // Cargar pacientes
+    const { data: pacsRaw, error } = await sbClient.from("pacientes").select("*").eq("medico_id", medicoId).order("created_at", { ascending: false });
+    if (error) { console.error("Error cargando pacientes:", error); return; }
+    // Cargar turnos y HC para cada paciente
+    const { data: turnosRaw } = await sbClient.from("turnos").select("*").eq("medico_id", medicoId);
+    const { data: hcRaw }     = await sbClient.from("hc").select("*").eq("medico_id", medicoId).order("fecha", { ascending: false });
+    const turnos = turnosRaw || [];
+    const hcs    = hcRaw    || [];
+    const pList = (pacsRaw || []).map(p => ({
+      ...p,
+      av:     getAv(p.nombre, p.apellido),
+      color:  getColor(p.id),
+      edad:   calcEdad(p.fecha_nac),
+      turnos: turnos.filter(t => t.paciente_id === p.id),
+      hc:     hcs.filter(c => c.paciente_id === p.id),
+      adj:    p.adj || [],
+    }));
+    setPacs(pList);
   }, []);
 
-  useEffect(() => { if (logged) syncPacs(); }, [logged, syncPacs]);
+  const syncPacs = loadPacs;
+
+  useEffect(() => { if (logged) loadPacs(); }, [logged, loadPacs]);
 
   const handleLogin = () => { setLogged(true); setMedico(DB.medico); };
   const handleOut   = async () => { await sbClient.auth.signOut(); setLogged(false); setMedico(null); DB.medico=null; setTab("dashboard"); setView(null); };
 
-  const savePaciente = f => {
-    const id = "p"+Date.now();
-    DB.pacientes.unshift({ id, nombre:f.nombre, apellido:f.ap||"—", dob:f.dob||null, dni:f.dni, tel:f.tel, email:f.email, tipo:f.tipo, dx:f.dx, meds:f.meds, notas:f.notas, turnos:[], hc:[], adj:[] });
-    DB.recs[id] = []; syncPacs(); addToast("Paciente agregado"); setModal(null);
+  const savePaciente = async f => {
+    const medicoId = DB.medico?.id;
+    const av = getAv(f.nombre, f.ap||"");
+    const color = getColor(f.nombre + (f.ap||""));
+    const { data, error } = await sbClient.from("pacientes").insert([{
+      medico_id: medicoId,
+      nombre: f.nombre, apellido: f.ap||"", dob: f.dob||null, fecha_nac: f.dob||null,
+      dni: f.dni||null, tel: f.tel||null, email: f.email||null,
+      tipo: f.tipo||"nuevo", dx: f.dx||null, meds: f.meds||null, notas: f.notas||null,
+      color, av,
+    }]).select().single();
+    if (error) { addToast("Error al guardar paciente"); console.error(error); return; }
+    await loadPacs(); addToast("Paciente agregado"); setModal(null);
   };
 
-  const saveTurno = f => {
-    const id = "t"+Date.now();
-    const t = { id, fecha:f.fecha, hora:f.hora, motivo:f.motivo||"Control", estado:"programado" };
-    const pac = DB.pacientes.find(p => p.id === f.pid);
-    if (pac) { if (!pac.turnos) pac.turnos=[]; pac.turnos.push(t); }
-    DB.recs[id] = []; syncPacs(); addToast("Turno agendado"); setModal(null);
+  const saveTurno = async f => {
+    const medicoId = DB.medico?.id;
+    const { error } = await sbClient.from("turnos").insert([{
+      medico_id: medicoId,
+      paciente_id: f.pid,
+      fecha: f.fecha, hora: f.hora,
+      motivo: f.motivo||"Control", estado: "programado",
+    }]);
+    if (error) { addToast("Error al guardar turno"); console.error(error); return; }
+    await loadPacs(); addToast("Turno agendado"); setModal(null);
   };
 
   const selPac = view?.type === "detail" ? pacs.find(p => p.id === view.id) : null;
