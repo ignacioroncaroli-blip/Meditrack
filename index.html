@@ -511,29 +511,8 @@ const dTipo    = n => { const e=(n||"").split(".").pop()?.toLowerCase(); if(["jp
 
 const DB = {
   medico: null,
-  pacientes: [
-    { id:"p1", nombre:"Ana", apellido:"Garcia", dob:"1984-03-12", dni:"28.341.122", tel:"+54 11 4523-9021", email:"ana@email.com", tipo:"recurrente", dx:"Hipertension arterial", meds:"Enalapril 10mg", notas:"Controlar dieta sin sal.",
-      turnos:[{id:"tp1",fecha:"2026-04-25",hora:"10:00",motivo:"Control mensual",estado:"programado"}],
-      hc:[{id:"c1",fecha:"2026-04-10",motivo:"Control mensual",sis:138,dia:88,peso:67,fc:72,notas:"Leve mejora."},{id:"c2",fecha:"2026-03-05",motivo:"Control rutinario",sis:142,dia:90,peso:68,notas:"Iniciar cambios."}],
-      adj:[{id:"a1",nombre:"hemograma-abril.pdf",tipo:"pdf",size:245000,fecha:"2026-04-10",desc:"Hemograma"},{id:"a2",nombre:"eco-abdominal.jpg",tipo:"img",size:1800000,fecha:"2026-03-20",desc:"Ecografia"}] },
-    { id:"p2", nombre:"Carlos", apellido:"Mendoza", dob:"1968-07-25", dni:"15.209.887", tel:"+54 11 5634-1122", email:"carlos@gmail.com", tipo:"recurrente", dx:"Diabetes tipo 2", meds:"Metformina 850mg", notas:"Glucemia en descenso.",
-      turnos:[{id:"tp2",fecha:"2026-04-22",hora:"11:30",motivo:"Control glucemia",estado:"programado"}],
-      hc:[{id:"c3",fecha:"2026-04-08",motivo:"Control glucemia",sis:125,dia:80,peso:89,notas:"Glucemia 145."}],
-      adj:[{id:"a3",nombre:"laboratorio.xlsx",tipo:"lab",size:38000,fecha:"2026-02-14",desc:"Glucemia"}] },
-    { id:"p3", nombre:"Lucia", apellido:"Fernandez", dob:"1995-11-08", dni:"37.890.445", tel:"+54 11 2211-8844", email:"lucia@outlook.com", tipo:"nuevo", dx:"Ansiedad leve", meds:null, notas:"Derivada de neurologia.",
-      turnos:[{id:"tp3",fecha:"2026-05-15",hora:"14:00",motivo:"Seguimiento",estado:"programado"}],
-      hc:[{id:"c4",fecha:"2026-04-15",motivo:"Primera consulta",sis:118,dia:75,peso:59,notas:"Anamnesis completa."}],
-      adj:[] },
-    { id:"p4", nombre:"Roberto", apellido:"Silva", dob:"1959-02-14", dni:"10.123.456", tel:"+54 11 3344-5566", email:"rsilva@yahoo.com", tipo:"recurrente", dx:"Insuf. cardiaca leve", meds:"Furosemida 40mg", notas:"Control estricto.",
-      turnos:[{id:"tp4",fecha:"2026-04-28",hora:"09:00",motivo:"Control cardiologico",estado:"programado"}],
-      hc:[{id:"c5",fecha:"2026-03-20",motivo:"Control cardiologico",sis:140,dia:85,peso:78,notas:"Edemas reducidos."}],
-      adj:[] },
-    { id:"p5", nombre:"Marta", apellido:"Suarez", dob:"1972-06-15", dni:"22.456.789", tel:"+54 11 6677-8899", email:"marta@gmail.com", tipo:"nuevo", dx:"Hipotiroidismo", meds:"Levotiroxina 50mcg", notas:"Control hormonal.",
-      turnos:[{id:"tp5",fecha:"2026-05-07",hora:"16:00",motivo:"Resultado analisis",estado:"programado"}],
-      hc:[{id:"c6",fecha:"2026-04-16",motivo:"Primera consulta",sis:122,dia:78,peso:72,notas:"TSH solicitada."}],
-      adj:[] },
-  ],
-  recs: { tp1:[{id:"r1",canal:"whatsapp",estado:"enviado",at:"2026-04-18T18:01:00"},{id:"r2",canal:"email",estado:"enviado",at:"2026-04-18T18:01:02"}], tp2:[], tp3:[], tp4:[], tp5:[] },
+  pacientes: [],
+  recs: {},
 };
 
 // ─── ICONS ──────────────────────────────────────────────────
