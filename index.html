@@ -490,7 +490,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #F4F5F7; color: 
     });
   }
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 </script>
 <script type="text/babel">
 const { useState, useCallback, useRef, useEffect } = React;
@@ -615,14 +615,14 @@ function Auth({ onLogin }) {
     setBusy(true); setErr("");
     try {
       if (mode === "login") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+        const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pw });
         if (error) { setErr(error.message === "Invalid login credentials" ? "Email o contraseña incorrectos." : error.message); setBusy(false); return; }
         // Traer perfil del médico
-        const { data: perfil } = await supabase.from("medicos").select("*").eq("id", data.user.id).single();
+        const { data: perfil } = await sbClient.from("medicos").select("*").eq("id", data.user.id).single();
         DB.medico = perfil || { nombre: "Dr.", apellido: "", email, especialidad: "", plan: "basic" };
       } else {
         if (!nom) { setErr("Ingresá tu nombre."); setBusy(false); return; }
-        const { data, error } = await supabase.auth.signUp({ email, password: pw, options: { data: { nombre: nom, apellido: ap, especialidad: esp } } });
+        const { data, error } = await sbClient.auth.signUp({ email, password: pw, options: { data: { nombre: nom, apellido: ap, especialidad: esp } } });
         if (error) { setErr(error.message); setBusy(false); return; }
         DB.medico = { nombre: nom, apellido: ap, email, especialidad: esp, plan: "basic" };
       }
@@ -1731,7 +1731,7 @@ function App() {
   useEffect(() => { if (logged) syncPacs(); }, [logged, syncPacs]);
 
   const handleLogin = () => { setLogged(true); setMedico(DB.medico); };
-  const handleOut   = async () => { await supabase.auth.signOut(); setLogged(false); setMedico(null); DB.medico=null; setTab("dashboard"); setView(null); };
+  const handleOut   = async () => { await sbClient.auth.signOut(); setLogged(false); setMedico(null); DB.medico=null; setTab("dashboard"); setView(null); };
 
   const savePaciente = f => {
     const id = "p"+Date.now();
