@@ -1539,6 +1539,15 @@ function Settings({ medico, addToast, onMedicoUpdate }) {
 }
 
 // ─── CONSULTA FULLPAGE ───────────────────────────────────────
+function CpSec({ title, children }) {
+  return (
+    <div className="cp-sec">
+      <div className="cp-sec-header">{title}</div>
+      <div className="cp-sec-body">{children}</div>
+    </div>
+  );
+}
+
 function ConsultaPage({ pac, onClose, onSave }) {
   const [f, setF] = useState({ motivo:"", fecha:new Date().toISOString().split("T")[0], presion_sis:"", presion_dia:"", fc:"", temp:"", spo2:"", peso:"", talla:"", examen_fisico:"", dx_consulta:"", indicaciones:"", estudios:"", meds_consulta:"", meds_cambios:"", receta:false, proxima_fecha:"", proxima_motivo:"", notas:"" });
   const [busy, setBusy] = useState(false);
@@ -1554,12 +1563,7 @@ function ConsultaPage({ pac, onClose, onSave }) {
     onSave(f); setBusy(false);
   };
 
-  const Sec = ({ title, children }) => (
-    <div className="cp-sec">
-      <div className="cp-sec-header">{title}</div>
-      <div className="cp-sec-body">{children}</div>
-    </div>
-  );
+  const Sec = CpSec;
 
   return (
     <div className="cp-overlay">
